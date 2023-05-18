@@ -1,0 +1,6 @@
+name: genepi-pipeline 
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - snakemake 
