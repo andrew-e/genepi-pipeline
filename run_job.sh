@@ -13,12 +13,13 @@
 module add apps/singularity/3.8.3
 
 SCRATCH_MNT_DIR=/user/work/$USER
-SCRIPT=""
+CURRENT_DIR=$(pwd)
 
 if [ "$SCRIPT" ]
 then
     SCRIPT="Rscript $SCRIPT"
 fi
+echo $SCRIPT
 
-singularity run -B $SCRATCH_MNT_DIR:./scratch docker://andrewrrelmore/genepi_pipeline:latest $SCRIPT
+singularity run -B $SCRATCH_MNT_DIR:$CURRENT_DIR/scratch docker://andrewrrelmore/genepi_pipeline:latest $SCRIPT
 
