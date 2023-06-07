@@ -2,14 +2,24 @@ DEFAULT_COLUMNS <- list(MARKER="MARKER", EA="EA", NONEA="NONEA", EAF="EAF", P="P
 METAL_COLUMNS <- list(MARKER="MarkerName", EA="Allele1", NONEA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr")
 PLINK_COLUMNS = list(MARKER="ID", EA="REF", NONEA="ALT1", EAF="Freq1", P="P.value", EFFECT="BETA", SE="StdErr", CHR="CHROME", BP="POS")
 
-
-util.read_file <- function(filename, format) {
-
-}
+dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
 
 util.save_file <- function(df, filename, save_location, format) {
 
 }
+
+util.rsid_to_coord <- function(gwas_filename, column = "SNP") {
+    gwas <- data.table::fread(gwas_filename)
+    gwas[[column]] <- gsub('^rs', '', gwas[[column]])
+
+    rsid_list <- toString(gwas[[column]])
+
+    sqlite_query <- paste0("SELECT 'rs' || rsid || ',' || chrom || ':' || coord FROM rsid_to_coord WHERE rsid IN (", rsid_list, ")")
+
+    sqlite_command <- paste("sqlite3", dbsnp.hg37, sqlite_query)
+    output <- system(sqlite_command, intern = TRUE)
+}
+
 
 util.column_names <- function(columns = list()) {
     chosen_names <- DEFAULT_COLUMNS

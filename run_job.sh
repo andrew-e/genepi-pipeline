@@ -19,7 +19,6 @@ if [ "$SCRIPT" ]
 then
     SCRIPT="Rscript $SCRIPT"
 fi
-echo $SCRIPT
 
 singularity run -B $SCRATCH_MNT_DIR:$CURRENT_DIR/scratch docker://andrewrrelmore/genepi_pipeline:latest $SCRIPT
 

@@ -1,7 +1,10 @@
 FROM python:3.11-slim
 
 RUN apt update && \
-    apt install -y --no-install-recommends build-essential software-properties-common dirmngr gnupg libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev libxml2-dev libcurl4-gnutls-dev libssl-dev libgmp-dev libnlopt-dev cmake libcairo2-dev libxt-dev && \
+    apt install -y --no-install-recommends build-essential software-properties-common dirmngr gnupg \
+    libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \ 
+    libxml2-dev libcurl4-gnutls-dev libssl-dev libgmp-dev libnlopt-dev cmake libcairo2-dev libxt-dev \
+    plink1.9 sqlite3 && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B8F25A8A73EACF41 && \
     echo "deb https://www.stats.bris.ac.uk/R/bin/linux/debian bullseye-cran40/" | tee -a /etc/apt/sources.list && \
     apt update && \
@@ -11,5 +14,7 @@ RUN apt update && \
 COPY . .
 RUN Rscript docker/requirements.r && \
     pip install -r docker/requirements.txt
+
+COPY r_scripts .
 
 CMD ["/bin/bash"]
