@@ -1,8 +1,12 @@
-import getpass
+import os
+from dotenv import load_dotenv
 
-work_dir = "/user/work/" + getpass.getuser()
+load_dotenv()
 
-directories = {
-    "data": work_dir + "/132/data",
-    "results": work_dir + "/132/results"
-}
+if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
+    raise ValueError("Please populate DATA_DIR and RESULTS_DIR in the .env file provided")
+
+
+DATA_DIR = os.getenv('DATA_DIR')
+RESULTS_DIR= os.getenv('RESULTS_DIR')
+SCRIPTS_DIR= os.getenv('SCRIPTS_DIR')

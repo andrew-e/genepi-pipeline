@@ -1,8 +1,8 @@
-source("util.r")
+source("/home/scripts/functions/util.r")
 
-graphs.forest_plot <- function(table,
-                               name,
-                               save_location = "scratch/results/") {
+forest_plot <- function(table,
+                        name,
+                        save_location = "scratch/results/") {
 
     if (!("BETA" %in% names(table)) || !("SE" %in% names(table))) {
         stop("data frame needs to have BETA and SE named columns")
@@ -25,14 +25,16 @@ graphs.forest_plot <- function(table,
     ggsave(file_to_save)
 }
 
-#' manhattan_and_qq: produce qq and manhattan plot of GWAS data 
+#' manhattan_and_qq: produce manhattan and qq plot from a GWAS file
 #'
-#' @param gwas_dataframe: a dataframe that includes CHR, CP, P, and SNP
+#' @param gwas_filename: a file of a gwas that includes CHR, CP, P, and SNP
 #' @param name: name of plots to be saved (and named as a header in graph) 
 #' @param save_dir: defaults to 'scratch/results' 
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 #' @examples
-graphs.manhattan_and_qq <- function(gwas, name, save_location = "scratch/results/", columns=list(), include_qq=T) {
+manhattan_and_qq <- function(gwas_filename, name, save_location = "scratch/results/", columns=list(), include_qq=T) {
+    gwas <- data.table::fread(gwas_filename)
+
     filename_manhattan <- paste0(save_location, name, ".png")
     filename_qq <- paste0(save_location, name, ".qq.png")
 
@@ -45,8 +47,6 @@ graphs.manhattan_and_qq <- function(gwas, name, save_location = "scratch/results
     gwas[[bp]] <- as.numeric(gwas[[bp]])
     gwas[[p]] <- as.numeric(gwas[[p]])
 
-    gwas <- gwas[complete.cases(gwas),]
-
     png(filename_manhattan, width=1500, height=500)
     manhattan(gwas,
               chr = chr,
@@ -57,12 +57,12 @@ graphs.manhattan_and_qq <- function(gwas, name, save_location = "scratch/results
     dev.off()
 
     if (include_qq) {
-        png(filename_qq, width=1500, height=500)
+        png(filename_qq, width=500, height=500)
 
         qq(gwas[[p]], main = paste(name, "Q-Q plot of GWAS p-values"))
 
-        alpha <- median(qchisq(1 - gwas[[p]], 1)) / qchisq(0.5,1)
-        text(0.5, 4, paste("lambda", "=",  signif(alpha, digits = 3)))
+        lambda <- median(qchisq(1 - gwas[[p]], 1)) / qchisq(0.5,1)
+        text(0.5, 4, paste("lambda", "=",  signif(lambda, digits = 3)))
         dev.off()
     }
 }
@@ -75,7 +75,7 @@ graphs.manhattan_and_qq <- function(gwas, name, save_location = "scratch/results
 #' @param save_dir: defaults to 'scratch/results'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 #' @examples
-graphs.miami_plot <- function(first_gwas, second_gwas, name, save_location = "scratch/results/", columns=list()) {
+miami_plot <- function(first_gwas, second_gwas, name, save_location = "scratch/results/", columns=list()) {
     miami_filename <- paste0(save_location, "miami_", name, ".png")
 
     chr <- if(!is.null(columns$CHR)) columns$CHR else "CHR"

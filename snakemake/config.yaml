@@ -12,7 +12,7 @@ cluster:
     --cpus-per-task={threads}
     --mem={resources.mem}
     --job-name={rule}-{wildcards}
-    --output=/user/work/$USER/slurm_logs/{rule}-{wildcards}-%j.out
+    --output=/user/work/$USER/slurm_logs/{rule}{wildcards}_%j.out
 default-resources:
   - time='01:00:00'
   - partition=mrcieu
@@ -24,10 +24,10 @@ max-jobs-per-second: 10
 max-status-checks-per-second: 1
 local-cores: 1
 latency-wait: 10
-jobs: 100
+jobs: 10
 keep-going: True
 rerun-incomplete: True
 use-singularity: True
-singularity-args: '-B /user/work/$(whoami)'
+singularity-args: '-B /user/work/$(whoami) -B /user/home/$(whoami)'
 printshellcmds: True
 scheduler: greedy

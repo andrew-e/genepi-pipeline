@@ -1,15 +1,15 @@
 include: "snakemake/common.smk"
-singularity: "docker://andrewrrelmore/genepi_pipeline:latest"
+singularity: "docker://andrewrrelmore/genepi_pipeline:develop"
 
 onstart:
     print("##### TEST #####") 
 
-#rule plinky:
-#    output: "plink.out"
-#    shell:
-#        """
-#        plink1.9 --help > {output}
-#        """
+rule plinky:
+    output: "plink.out"
+    shell:
+        """
+        plink1.9 --help > {output}
+        """
 
 rule manhattan_plot:
     resources:
@@ -23,5 +23,5 @@ rule manhattan_plot:
     threads: 1
     shell:
         """
-        Rscript test.r {input} {output}
+        Rscript /home/scripts/manhattan.r --gwas_filename {input} --manhattan_filename {output.manhattan} --qq_filename {output.qq}
         """

@@ -11,10 +11,13 @@ RUN apt update && \
     apt install -y r-base=4.3.0-1~bullseyecran.0 r-base-dev=4.3.0-1~bullseyecran.0 && \ 
     rm -rf /var/lib/apt/lists/* #pin versions?
 
-COPY . .
+COPY docker/ docker
 RUN Rscript docker/requirements.r && \
     pip install -r docker/requirements.txt
 
-COPY r_scripts .
+RUN mkdir -p /home/scripts
+COPY r_scripts /home/scripts
+#RUN wget http://csg.sph.umich.edu/abecasis/metal/download/Linux-metal.tar.gz
+#RUN install bcftools too?
 
 CMD ["/bin/bash"]

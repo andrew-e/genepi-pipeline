@@ -4,11 +4,14 @@ PLINK_COLUMNS = list(MARKER="ID", EA="REF", NONEA="ALT1", EAF="Freq1", P="P.valu
 
 dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
 
-util.save_file <- function(df, filename, save_location, format) {
+save_file <- function(df, filename, save_location, format) {
 
 }
 
-util.rsid_to_coord <- function(gwas_filename, column = "SNP") {
+chrpos_to_rsid <- function(gwas_filename, column = "SNP") {
+}
+
+rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
     gwas <- data.table::fread(gwas_filename)
     gwas[[column]] <- gsub('^rs', '', gwas[[column]])
 
@@ -21,7 +24,7 @@ util.rsid_to_coord <- function(gwas_filename, column = "SNP") {
 }
 
 
-util.column_names <- function(columns = list()) {
+column_names <- function(columns = list()) {
     chosen_names <- DEFAULT_COLUMNS
 
     for (column in columns) {
