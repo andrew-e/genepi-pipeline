@@ -2,13 +2,13 @@ source("/home/scripts/load.r")
 
 library(argparser, quietly=TRUE)
 
-parser <- arg_parser("Create a manhattan plot from GWAS summary statistics")
+parser <- arg_parser("Create a miami plot, comparing 2 GWASes")
 
-parser <- add_argument(parser, "--first_gwas", help="filename of first GWAS", type="character")
-parser <- add_argument(parser, "--second_gwas", help="filename of second GWAS", type="character")
-parser <- add_argument(parser, "--miami_filename", help="filename of plot to save",  type="character")
-parser <- add_argument(parser, "--title", help="title of plot", default="Comparing GWASes", type="character")
+parser <- add_argument(parser, "--gwas_filename", help="filename of GWAS", type="character")
+parser <- add_argument(parser, "--manhattan_filename", help="filename of plot", type="character")
+parser <- add_argument(parser, "--qq_filename", help="filename of qq plot",  type="character")
+parser <- add_argument(parser, "--include_qq", help="include qq plot", default=TRUE, type="logical")
 
 args <- parse_args(parser)
 
-manhattan_and_qq(args$first_gwas, args$second_gwas, args$miami_filename, args$title)
+manhattan_and_qq(args$gwas_filename, args$manhattan_filename, args$qq_filename, args$include_qq)

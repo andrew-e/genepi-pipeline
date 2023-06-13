@@ -31,7 +31,8 @@ forest_plot <- function(table,
 #' @param name: name of plots to be saved (and named as a header in graph) 
 #' @param save_dir: defaults to 'scratch/results' 
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
-manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, columns=list(), include_qq=T) {
+manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq=T, columns=list()) {
+    library(qqman)
     gwas <- data.table::fread(gwas_filename)
 
     chr <- if(!is.null(columns$CHR)) columns$CHR else "CHR"
@@ -44,18 +45,18 @@ manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, col
     gwas[[p]] <- as.numeric(gwas[[p]])
 
     png(manhattan_filename, width=1500, height=500)
-    manhattan(gwas,
+    qqman::manhattan(gwas,
               chr = chr,
               bp = bp,
               p = p,
               snp = snp,
-              main = paste(name, "Manhattan plot of GWAS"))
+              main = "Manhattan plot of GWAS")
     dev.off()
 
     if (include_qq) {
         png(qq_filename, width=500, height=500)
 
-        qq(gwas[[p]], main = paste(name, "Q-Q plot of GWAS p-values"))
+        qqman::qq(gwas[[p]], main = "Q-Q plot of GWAS p-values")
 
         lambda <- median(qchisq(1 - gwas[[p]], 1)) / qchisq(0.5,1)
         text(0.5, 4, paste("lambda", "=",  signif(lambda, digits = 3)))

@@ -16,6 +16,7 @@ Steps to start using the pipeline
 #### Create and activate conda environment
 * `conda env create --file environment.yml`
 * `conda activate genepi-pipeline`
+* `module load apps/singularity/3.8.3`
 
 #### Populate the your DATA_DIR and RESULTS_DIR environment variables in .env file
 These should probably be in your *work* or *scratch* space (`/user/work/$(whoami)/...`)
@@ -39,5 +40,5 @@ We can define different Snakefiles for different pipelines as it becomes more ma
 * The `Dockerfile` and `docker/` directory hold the information for creating the docker image that the pipeline runs
 * `r_scripts` code that can be called from snakemake
     * `r_scripts/functions/` holds r code that can be called and reused by any step in the pipeline (accessed by a cli script)
-    * `r_scripts/cli/` holds the scripts that can be easily called by snakemake (`Rscript example.r --input_file example.txt`)
+    * `r_scripts/` holds the scripts that can be easily called by snakemake (`Rscript example.r --input_file example.txt`)
 * Snakefile and snakemake directory, which defines the pipeline steps and configuration
