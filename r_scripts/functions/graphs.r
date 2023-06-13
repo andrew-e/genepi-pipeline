@@ -31,12 +31,8 @@ forest_plot <- function(table,
 #' @param name: name of plots to be saved (and named as a header in graph) 
 #' @param save_dir: defaults to 'scratch/results' 
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
-#' @examples
-manhattan_and_qq <- function(gwas_filename, name, save_location = "scratch/results/", columns=list(), include_qq=T) {
+manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, columns=list(), include_qq=T) {
     gwas <- data.table::fread(gwas_filename)
-
-    filename_manhattan <- paste0(save_location, name, ".png")
-    filename_qq <- paste0(save_location, name, ".qq.png")
 
     chr <- if(!is.null(columns$CHR)) columns$CHR else "CHR"
     bp <- if(!is.null(columns$BP)) columns$BP else "BP"
@@ -47,7 +43,7 @@ manhattan_and_qq <- function(gwas_filename, name, save_location = "scratch/resul
     gwas[[bp]] <- as.numeric(gwas[[bp]])
     gwas[[p]] <- as.numeric(gwas[[p]])
 
-    png(filename_manhattan, width=1500, height=500)
+    png(manhattan_filename, width=1500, height=500)
     manhattan(gwas,
               chr = chr,
               bp = bp,
@@ -57,7 +53,7 @@ manhattan_and_qq <- function(gwas_filename, name, save_location = "scratch/resul
     dev.off()
 
     if (include_qq) {
-        png(filename_qq, width=500, height=500)
+        png(qq_filename, width=500, height=500)
 
         qq(gwas[[p]], main = paste(name, "Q-Q plot of GWAS p-values"))
 
@@ -75,15 +71,14 @@ manhattan_and_qq <- function(gwas_filename, name, save_location = "scratch/resul
 #' @param save_dir: defaults to 'scratch/results'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 #' @examples
-miami_plot <- function(first_gwas, second_gwas, name, save_location = "scratch/results/", columns=list()) {
-    miami_filename <- paste0(save_location, "miami_", name, ".png")
+miami_plot <- function(first_gwas_filename, second_gwas_filename, miami_filename, title="Comparing GWASes", columns=list()) {
+    first_gwas <- data.table::fread(first_gwas_filename)
+    second_gwas <- data.table::fread(second_gwas_filename)
 
     chr <- if(!is.null(columns$CHR)) columns$CHR else "CHR"
     bp <- if(!is.null(columns$BP)) columns$BP else "BP"
     p <- if(!is.null(columns$P)) columns$P else "P"
     snp <- if(!is.null(columns$MARKER)) columns$MARKER else "MARKER"
-
-    print(paste(chr, bp, p, snp))
 
     first_gwas[[chr]] <- as.numeric(first_gwas[[chr]])
     first_gwas[[bp]] <- as.numeric(first_gwas[[bp]])
@@ -105,7 +100,7 @@ miami_plot <- function(first_gwas, second_gwas, name, save_location = "scratch/r
           bp = bp,
           p = p,
           snp = snp,
-          main = paste(name, " Original GWAS Manhattan vs. Subsequent"))
+          main = title)
 
     par(mar=c(5,5,3,3))
     manhattan(second_gwas,

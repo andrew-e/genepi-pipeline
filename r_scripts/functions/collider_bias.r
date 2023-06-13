@@ -177,7 +177,7 @@ correct_for_collider_bias <- function(incidence_gwas,
 #' @param slope: number, slope of the correction
 #' @param slope_standard_error: number, SE of the corrected slope
 #' @return gwas with 3 additional columns BETA_{name}, SE_{name}, and P_{name}
-bias.adjust_gwas_data_from_weights <- function(gwas, type_of_adjustment, slope, slope_standard_error) {
+adjust_gwas_data_from_weights <- function(gwas, type_of_adjustment, slope, slope_standard_error) {
     adjusted_beta <- paste0("BETA_", type_of_adjustment)
     adjusted_se <- paste0("SE_", type_of_adjustment)
     adjusted_p <- paste0("P_", type_of_adjustment)
