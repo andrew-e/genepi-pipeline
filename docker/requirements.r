@@ -1,8 +1,6 @@
-
-
 install.packages(c("argparser", "coloc", "devtools", "MendelianRandomization",
                    "eeptools", "gmp", "qqman", "corrplot", "broom",
-                   "conflicted", "nloptr", "Cairo", "plotrix", "forestplot"),
+                   "conflicted", "nloptr", "Cairo", "plotrix", "forestplot", "dplyr", "BiocManager"),
                  repos = "http://cran.us.r-project.org")
 
 install.packages('https://homepages.uni-regensburg.de/~wit59712/easyqc/EasyQC_23.8.tar.gz', repos = NULL, type = 'source')
@@ -14,3 +12,5 @@ devtools::install_github(c("Osmahmoud/SlopeHunter",
                            "MRCIEU/TwoSampleMR",
                            "suchestoncampbelllab/gwasurvivr")
 )
+
+BiocManager::install("GENESIS")
