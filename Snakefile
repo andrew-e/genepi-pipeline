@@ -17,9 +17,10 @@ rule manhattan_plot:
         cpus_per_task='4',
         time='01:00:00',
     input:
-        "test.r"
+        DATA_DIR + "/gwases/existing_stroke_gwas.tsv"
     output:
-        work_dir + "/132/results/plots/test.png"
+        manhattan = RESULTS_DIR + "/plots/test.png",
+        qq = RESULTS_DIR + "/plots/test.qq.png"
     threads: 1
     shell:
         """
