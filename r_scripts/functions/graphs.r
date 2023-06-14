@@ -33,6 +33,7 @@ forest_plot <- function(table,
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq=T, columns=list()) {
     library(qqman)
+    create_dir_for_files(c(manhattan_filename, qq_filename))
     gwas <- data.table::fread(gwas_filename)
 
     chr <- if(!is.null(columns$CHR)) columns$CHR else "CHR"
