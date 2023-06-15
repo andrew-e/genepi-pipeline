@@ -19,8 +19,8 @@ rule clump:
 
 rule compare_observed_vs_expected_gwas:
     input:
-        gwases: ",".join([DATA_DIR + "/gwas_" + a + ".tsv" for a in ANCESTRIES]) 
-        clumped_files: ",".join([DATA_DIR + a + ".clumped" for a in ANCESTRIES]) 
+        gwases: ",".join([DATA_DIR + "/gwas_" + a + ".tsv" for a in ANCESTRIES])
+        clumped_files: ",".join([DATA_DIR + a + ".clumped" for a in ANCESTRIES])
     output:
         RESULTS_DIR + "/expected_vs_observed_outcomes.tsv"
     shell:
