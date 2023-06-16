@@ -1,4 +1,4 @@
-source("/home/scripts/load.r")
+source("/home/r_scripts/load.r")
 
 library(argparser, quietly=TRUE)
 

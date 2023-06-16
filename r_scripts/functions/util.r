@@ -4,6 +4,10 @@ PLINK_COLUMNS = list(MARKER="ID", EA="REF", NONEA="ALT1", EAF="Freq1", P="P.valu
 
 dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
 
+split_string_into_list <- function(input_string) {
+    return(as.list(strsplit(str, ',')))
+}
+
 create_dir_for_files <- function(filenames) {
     library(stringr)
     for (filename in filenames) {

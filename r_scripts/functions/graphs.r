@@ -1,4 +1,4 @@
-source("/home/scripts/functions/util.r")
+source("/home/r_scripts/functions/util.r")
 
 forest_plot <- function(table,
                         name,

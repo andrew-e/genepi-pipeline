@@ -24,5 +24,5 @@ rule manhattan_plot:
     threads: 1
     shell:
         """
-        Rscript /home/scripts/manhattan.r --gwas_filename {input} --manhattan_filename {output.manhattan} --qq_filename {output.qq}
+        Rscript /home/r_scripts/manhattan.r --gwas_filename {input} --manhattan_filename {output.manhattan} --qq_filename {output.qq}
         """

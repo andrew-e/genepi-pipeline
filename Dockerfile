@@ -15,8 +15,8 @@ COPY docker/ docker
 RUN Rscript docker/requirements.r && \
     pip install -r docker/requirements.txt
 
-RUN mkdir -p /home/scripts
-COPY r_scripts /home/scripts
+RUN mkdir -p /home/r_scripts
+COPY r_scripts /home/r_scripts
 #RUN wget http://csg.sph.umich.edu/abecasis/metal/download/Linux-metal.tar.gz
 #RUN install bcftools too?
 
