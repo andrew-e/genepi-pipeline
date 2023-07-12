@@ -50,19 +50,19 @@ column_names <- function(columns = list()) {
 #'
 #' @param gwas_filename: a dataframe that includes CHR, CP, P, and SNP
 #' @param column_names: named list of columns to change (ex. MARKER="ID")
-#' @return: changes the gwas_filename inline.
-#' @examples
+#' @return: nothing: changes the gwas_filename inline.
 change_header_names <- function(gwas_filename, column_names = list()) {
     if (length(column_names) != 0) {
+        sed_command <- "sed -i '"
         for (name in names(column_names)) {
-            sed_command <- paste0("sed -i '0,/", column_names[[name]],
-                                  "/{s/", column_names[[name]], "/", name, "/}' ",
-                                  gwas_filename)
-            system(sed_command)
+            sed_line <- paste0("0,/", column_names[[name]], "/{s/", column_names[[name]], "/", name, "/};")
+            sed_command <- paste0(sed_command, sed_line)
         }
+
+        sed_command <- paste0(sed_command, "' ", gwas_filename)
+        system(sed_command)
     }
 }
-
 
 #' standardise_gwas_data: standardise gwas column names and columns
 #'

@@ -1,25 +1,5 @@
 source("/home/r_scripts/functions/util.r")
 
-#' convert_odds_ratio_to_beta_estimate: Given an OR and lower and upper bounds,
-#'   calculates the BETA, and SE.
-#'   based on this answer: https://stats.stackexchange.com/a/327684
-#'
-#' @param df: dataframe with the following columns: OR, LB (lower bound), UB (upper bound)
-#' @return df with new columns BETA and SE
-#'
-convert_odds_ratio_to_beta_estimate <- function(gwas_filename, columns=list()) {
-    library(boot)
-
-    gwas <- data.table::fread(gwas_filename)
-    gwas$BETA <- log(gwas$OR)
-
-    lower_bound <- boot::inv.logit(gwas$LB)
-    upper_bound <- boot::inv.logit(gwas$UB)
-
-    gwas$SE <- (gwas$UB - gwas$LB) / (2 * 1.95996)
-
-    return(gwas)
-}
 
 #' Expected vs observed replication rates
 #'
@@ -66,6 +46,25 @@ expected_vs_observed_replication <- function(b_disc, b_rep, se_disc, se_rep, alp
 #'  frequency, and beta values are aligned, then saves the files
 #'
 #' @param: gwas_filenames
-harmonise_gwases <- function(gwas_filenames) {
+#' #' harmonise_gwases: takes a list of gwases, standardises the alleeles and SNP name,
+#'     then finds the intersection of shared SNPs
+#'
+#' @param: elipses of gwases
+#' @return: list of harmonised gwases
+#'
+harmonise_gwases <- function(...) {
+    gwases <- list(...)
 
+    # standardise each dataset and get new snp IDs
+    gwases <- lapply(gwases, standardise_alleles)
+
+    # get the SNPs in common across all datasets arrange to be in the same order
+    snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
+    gwases <- lapply(gwases, function(gwas) {
+        gwas %>%
+        filter(SNP %in% snpids) %>%
+        arrange(CHR, BP, EA, NONEA)
+    })
+
+    return(gwases)
 }

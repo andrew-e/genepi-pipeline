@@ -9,13 +9,13 @@ RUN apt update && \
     echo "deb https://www.stats.bris.ac.uk/R/bin/linux/debian bullseye-cran40/" | tee -a /etc/apt/sources.list && \
     apt update && \
     apt install -y r-base=4.3.0-1~bullseyecran.0 r-base-dev=4.3.0-1~bullseyecran.0 && \ 
+    mkdir -p /home/r_scripts && \
     rm -rf /var/lib/apt/lists/* #pin versions?
 
 COPY docker/ docker
 RUN Rscript docker/requirements.r && \
     pip install -r docker/requirements.txt
 
-RUN mkdir -p /home/r_scripts
 COPY r_scripts /home/r_scripts
 #RUN wget http://csg.sph.umich.edu/abecasis/metal/download/Linux-metal.tar.gz
 #RUN install bcftools too?

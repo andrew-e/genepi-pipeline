@@ -1,13 +1,13 @@
 source("/home/r_scripts/load.r")
 
-library(argparser, quietly=TRUE)
+library(argparser, quietly = TRUE)
 
 parser <- arg_parser("Create a miami plot, comparing 2 GWASes")
 
-parser <- add_argument(parser, "--gwas_filename", help="filename of GWAS", type="character")
-parser <- add_argument(parser, "--manhattan_filename", help="filename of plot", type="character")
-parser <- add_argument(parser, "--qq_filename", help="filename of qq plot",  type="character")
-parser <- add_argument(parser, "--include_qq", help="include qq plot", default=TRUE, type="logical")
+parser <- add_argument(parser, "--gwas_filename", help = "filename of GWAS", type = "character")
+parser <- add_argument(parser, "--manhattan_filename", help = "filename of plot", type = "character")
+parser <- add_argument(parser, "--qq_filename", help = "filename of qq plot", type = "character")
+parser <- add_argument(parser, "--include_qq", help = "include qq plot", default = TRUE, type = "logical")
 
 args <- parse_args(parser)
 
