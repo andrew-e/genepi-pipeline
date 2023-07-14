@@ -58,13 +58,12 @@ manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, inc
 }
 
 
-#' miami_plot: produce miami plot of GWAS data
+#' miami_plot: produce miami plot of GWAS data from two gwases
 #'
 #' @param gwas_dataframe: a dataframe that includes CHR, CP, P, and SNP
 #' @param name: name of plots to be saved (and named as a header in graph)
 #' @param save_dir: defaults to 'scratch/results'
-#' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
-#' @examples
+#' 
 miami_plot <- function(first_gwas_filename, second_gwas_filename, miami_filename, title = "Comparing GWASes") {
   library(qqman)
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
@@ -74,7 +73,7 @@ miami_plot <- function(first_gwas_filename, second_gwas_filename, miami_filename
   first_gwas <- first_gwas[complete.cases(first_gwas), ]
   second_gwas <- second_gwas[complete.cases(second_gwas), ]
 
-  png(miami_filename, width = 1500, height = 500)
+  png(miami_filename, width = 1500, height = 800)
 
   par(mfrow = c(2, 1))
   par(mar = c(0, 5, 3, 3))
