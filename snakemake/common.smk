@@ -21,6 +21,9 @@ def file_prefix(filename):
     stem = Path(rf"{filename}").stem
     return stem.split('.')[0]
 
-DATA_DIR = os.getenv('DATA_DIR') + "/"
-RESULTS_DIR= os.getenv('RESULTS_DIR') + "/"
-SCRIPTS_DIR= os.getenv('SCRIPTS_DIR') + "/"
+def format_dir_string(directory):
+    return directory + "/" if not directory.endswith('/') else directory
+
+DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
+RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
+SCRIPTS_DIR = format_dir_string(os.getenv('SCRIPTS_DIR'))

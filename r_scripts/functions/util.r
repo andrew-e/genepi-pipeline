@@ -23,6 +23,11 @@ save_file <- function(df, filename, save_location, format) {
 chrpos_to_rsid <- function(gwas_filename, column = "SNP") {
 }
 
+map_rsid_list_to_snps <- function(gwas, rsids=c()) {
+    gwas <- subset(gwas, RSID %in% rsids)
+    return(gwas$SNP)
+}
+
 rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
     gwas <- data.table::fread(gwas_filename)
     gwas[[column]] <- gsub('^rs', '', gwas[[column]])

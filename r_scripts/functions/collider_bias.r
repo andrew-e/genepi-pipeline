@@ -28,6 +28,8 @@ correct_for_collider_bias <- function(incidence_gwas,
   suppressPackageStartupMessages(library(SlopeHunter))
 
   clumped_snps <- data.table::fread(clumped_snps_file)$SNP
+  incidence <- data.table::fread(incidence_gwas)
+  clumped_snps <- map_snp_to_rsid(incidence, clumped_snps)
 
   incidence <- SlopeHunter::read_incidence(incidence_gwas,
     snp_col = "SNP",
