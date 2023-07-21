@@ -15,12 +15,12 @@ slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas
 dudbridge_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_dudbridge.tsv.gz"
 
 rule all:
-    input: collider_bias_results
+    input: collider_bias_results, slopehunter_results, dudbridge_results
 
 rule clump_incidence_gwas:
     input:
-        clump_dir = DATA_DIR + "/clumped_snps"
-        gwas = DATA_DIR + incidence_gwas
+        clump_dir = DATA_DIR + "/clumped_snps",
+        gwas = DATA_DIR + incidence_gwas,
         bfile = DATA_DIR + ancestry
     output:
         clumped_incidence
@@ -28,19 +28,21 @@ rule clump_incidence_gwas:
     shell:
         """
         mkdir -p {input.clump_dir}
-        plink1.9 --clump --file {input.gwas} --bfile {input.bfile} --out {output} --clump-r2 0.001 --clump-kb 10000 --clump-p1 1 --clump-p2 1
+        plink1.9 --clump --file {input.gwas} --bfile {input.bfile} --out {output} \
+            --clump-p2 0.001 --clump-r2 0.3 
         """
 
 rule collider_bias_correction:
     input:
-        incidence_gwas = DATA_DIR + "/" + incidence_gwas
-        subsequent_gwas = DATA_DIR + "/" + subsequent_gwas
+        incidence_gwas = DATA_DIR + "/" + incidence_gwas,
+        subsequent_gwas = DATA_DIR + "/" + subsequent_gwas,
         clumped_file = clumped_incidence 
     output:
         RESULTS_DIR + "/" + corrected_gwas
     shell:
         """
-        Rscript correct_for_collider_bias.r --incidence_gwas {incidence_gwas} \
+        Rscript correct_for_collider_bias.r \
+            --incidence_gwas {incidence_gwas} \
             --subsequent_gwas {subsequent_gwas} \
             --clumped_file {clumped_file} \
             --output_file {output}

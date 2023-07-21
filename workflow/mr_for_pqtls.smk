@@ -21,3 +21,4 @@ rule run_mr_against_pqtl_datasets:
         """
         Rscript run_mr_against_pqtl_data.r --gwas {input} --output {output}
         """
+

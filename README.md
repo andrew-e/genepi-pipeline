@@ -18,13 +18,28 @@ Steps to start using the pipeline
 * `conda activate genepi-pipeline`
 * `module load apps/singularity/3.8.3`
 
-#### Populate the your DATA_DIR and RESULTS_DIR environment variables in .env file
+#### Populate the DATA_DIR and RESULTS_DIR environment variables in .env file
 These should probably be in your *work* or *scratch* space (`/user/work/$(whoami)/...`)
 
 Note: they can't be your rdfs space, as that volume won't mount to into the singularity container
 
 #### Run the test pipeline
-`snakemake --profile snakemake/`
+`snakemake test.smk --profile snakemake/`
+
+## Usage:
+
+Each pipeline has it's own Snakefile in `workflow`.  The standard column naming for GWASes are:
+
+If you do not specify the expected format of the GWAS (ie. plink, bolt, metal), all pipelines will assume the following
+headers
+
+|           | SNP | BETA | SE  | P   | EA  | OA  | EAF | OR   | OR_LB | OR_UB |     |     |
+|-----------|-----|-----|-----|-----|-----|-----|-----|-----|-------|-------|-----|-----|
+| Mandatory | x | x | x | x | x | x | x |     |       |       |     |     |
+
+### GWAS Standardisation
+
+
 
 ## How it works:
 
@@ -38,7 +53,9 @@ We can define different Snakefiles for different pipelines as it becomes more ma
 ## Repository Organisation
 
 * The `Dockerfile` and `docker/` directory hold the information for creating the docker image that the pipeline runs
-* `r_scripts` code that can be called from snakemake
+* `r_scripts` code that can be called from the pipelines, inside the container
     * `r_scripts/functions/` holds r code that can be called and reused by any step in the pipeline (accessed by a cli script)
     * `r_scripts/` holds the scripts that can be easily called by snakemake (`Rscript example.r --input_file example.txt`)
-* Snakefile and snakemake directory, which defines the pipeline steps and configuration
+* Files to run snakemake, which include:
+  * `workflow` directory, which holds various Snakefile pipelines
+  * `snakemake` directory, which defines the pipeline steps and configuration, and shared code between pipelines

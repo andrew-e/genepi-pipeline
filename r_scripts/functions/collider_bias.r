@@ -11,7 +11,8 @@ correct_for_collider_bias <- function(incidence_gwas,
                                       #TODO: maybe change p_value_theshold to list?
                                       p_value_threshold = 0.001,
                                       include_slopehunter = T,
-                                      include_dudbridge = T) {
+                                      include_dudbridge = T,
+                                      include_ivw = F) {
   suppressPackageStartupMessages(library(SlopeHunter))
 
   incidence <- SlopeHunter::read_incidence(incidence_gwas,
@@ -30,7 +31,7 @@ correct_for_collider_bias <- function(incidence_gwas,
   subsequent_progression <- SlopeHunter::read_prognosis(subsequent_gwas,
     snp_col = "SNP",
     effect_allele_col = "EA",
-    other_allele_col = "NONEA",
+    other_allele_col = "OA",
     eaf_col = "EAF",
     pval_col = "P",
     beta_col = "BETA",
