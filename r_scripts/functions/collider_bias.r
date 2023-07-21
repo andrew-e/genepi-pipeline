@@ -1,3 +1,13 @@
+collider_bias_results <- data.frame(
+  METHOD = character(),
+  P_VAL_THRESHOLD = numeric(),
+  BETA = numeric(),
+  SE = numeric(),
+  HUNTED = numeric(),
+  PLEIOTROPIC = numeric(),
+  ENTROPY = numeric()
+)
+
 #' correct_for_collider_bias: do a bunch of collider bias corrections.  Including:
 #'  * SlopeHunter
 #'  * Dudbridge Correction
@@ -6,14 +16,18 @@
 #' @examples
 correct_for_collider_bias <- function(incidence_gwas,
                                       subsequent_gwas,
-                                      clumped_snps = c(),
-                                      output_file,
+                                      clumped_snps_file,
+                                      collider_bias_results_file,
+                                      collider_bias_adjusted_file,
                                       #TODO: maybe change p_value_theshold to list?
                                       p_value_threshold = 0.001,
                                       include_slopehunter = T,
                                       include_dudbridge = T,
                                       include_ivw = F) {
+  suppressPackageStartupMessages(library(tidyverse))
   suppressPackageStartupMessages(library(SlopeHunter))
+
+  clumped_snps <- data.table::fread(clumped_snps_file)$SNP
 
   incidence <- SlopeHunter::read_incidence(incidence_gwas,
     snp_col = "SNP",
@@ -61,15 +75,6 @@ correct_for_collider_bias <- function(incidence_gwas,
   pruned_harmonised_effects <- subset(pruned_harmonised_effects, is.na(BETA.prognosis) == FALSE)
   pruned_harmonised_effects <- subset(pruned_harmonised_effects, BETA.prognosis < 10)
 
-  collider_bias_results <- data.frame(
-    METHOD = character(),
-    P_VAL_THRESHOLD = numeric(),
-    BETA = numeric(),
-    SE = numeric(),
-    HUNTED = numeric(),
-    PLEIOTROPIC = numeric(),
-    ENTROPY = numeric()
-  )
 
   if (include_slopehunter) {
     print("Starting SlopeHunter")
@@ -145,11 +150,9 @@ correct_for_collider_bias <- function(incidence_gwas,
       PLEIOTROPIC = NA
     )
   }
-
-  collider_bias_result_file <- gsub("([\\w/]*)(\\..*)$", "\\1_cb_results\\2", output_file)
-  data.table::fwrite(collider_bias_results, collider_bias_result_file)
+  data.table::fwrite(collider_bias_results, collider_bias_results_file, sep="\t")
   # TODO: should we save a file for each collider bias correction?
-  data.table::frwite(harmonised_effects, output_file, sep = "\t")
+  data.table::frwite(harmonised_effects, collider_bias_adjusted_file, sep = "\t")
 }
 
 #' adjust_gwas_data_from_weights: Apply a slope correction weight (and SE) to an existing GWAS

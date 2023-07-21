@@ -1,0 +1,5 @@
+FROM andrewrrelmore/genepi_pipeline_base:latest
+
+COPY r_scripts /home/r_scripts
+
+CMD ["/bin/bash"]

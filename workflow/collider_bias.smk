@@ -2,17 +2,18 @@ include: "../snakemake/common.smk"
 singularity: "docker://andrewrrelmore/genepi_pipeline:develop"
 
 ancestry = "EUR"
-incidence_gwas = "incidence.tsv.gz"
-subsequent_gwas = "subsequent.tsv.gz"
+incidence_gwas = "/user/work/wt23152/test_data/incidence.tsv.gz"
+subsequent_gwas = "/user/work/wt23152/test_data/subsequent.tsv.gz"
 
 onstart:
     print("##### Bluepint for Collider Bias Correction Pipeline #####") 
 
 
 clumped_incidence = DATA_DIR + "clumped_snps/" + file_prefix(incdience_gwas) + ".clumped"
-collider_bias_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv.gz"
-slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
-dudbridge_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_dudbridge.tsv.gz"
+collider_bias_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"
+adjusted_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_adjusted.tsv.gz"
+#slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
+#dudbridge_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_dudbridge.tsv.gz"
 
 rule all:
     input: collider_bias_results, slopehunter_results, dudbridge_results
@@ -20,11 +21,10 @@ rule all:
 rule clump_incidence_gwas:
     input:
         clump_dir = DATA_DIR + "/clumped_snps",
-        gwas = DATA_DIR + incidence_gwas,
-        bfile = DATA_DIR + ancestry
+        gwas = incidence_gwas,
+        bfile = "/user/work/wt23152/genome_data/1000genomes/" + ancestry
     output:
         clumped_incidence
-    #TODO: configure this properly for collider bias clumping / pruning
     shell:
         """
         mkdir -p {input.clump_dir}
@@ -34,18 +34,20 @@ rule clump_incidence_gwas:
 
 rule collider_bias_correction:
     input:
-        incidence_gwas = DATA_DIR + "/" + incidence_gwas,
-        subsequent_gwas = DATA_DIR + "/" + subsequent_gwas,
+        incidence_gwas = incidence_gwas,
+        subsequent_gwas = subsequent_gwas,
         clumped_file = clumped_incidence 
     output:
-        RESULTS_DIR + "/" + corrected_gwas
+        results = collider_bias_results,
+        adjusted = adjusted_results
     shell:
         """
         Rscript correct_for_collider_bias.r \
             --incidence_gwas {incidence_gwas} \
             --subsequent_gwas {subsequent_gwas} \
             --clumped_file {clumped_file} \
-            --output_file {output}
+            --collider_bias_results_output {output.results}
+            --collider_bias_adjusted_output {output.adjusted}
         """
 
 #rule compare_and_plot_collider_bias_corrections:
