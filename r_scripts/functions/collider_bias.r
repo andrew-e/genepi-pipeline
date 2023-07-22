@@ -1,3 +1,9 @@
+collider_bias_type <- list(
+  slopehunter = "slopehunter",
+  dudbridge = "dudbridge",
+  ivw = "ivw"
+)
+
 collider_bias_results <- data.frame(
   METHOD = character(),
   P_VAL_THRESHOLD = numeric(),
@@ -19,17 +25,18 @@ correct_for_collider_bias <- function(incidence_gwas,
                                       subsequent_gwas,
                                       clumped_snps_file,
                                       collider_bias_results_file,
-                                      collider_bias_adjusted_file,
+                                      slopehunter_adjusted_file,
+                                      dudbridge_adjusted_file,
                                       #TODO: maybe change p_value_theshold to list?
                                       p_value_threshold = 0.001,
                                       include_slopehunter = T,
-                                      include_dudbridge = T,
-                                      include_ivw = F) {
+                                      include_dudbridge = T) {
   library(dplyr, quietly = TRUE)
   library(SlopeHunter, quietly = TRUE)
 
   clumped_snps <- data.table::fread(clumped_snps_file)
   incidence <- data.table::fread(incidence_gwas)
+  subsequent <- data.table::fread(subsequent_gwas)
   clumped_snps <- map_rsid_list_to_snps(incidence, clumped_snps$SNP)
   print(paste("Found", length(clumped_snps), "in incidence GWAS for clumping"))
 
@@ -83,7 +90,6 @@ correct_for_collider_bias <- function(incidence_gwas,
   if (include_slopehunter) {
     print("Starting SlopeHunter")
 
-    collider_bias_type <- "slopehunter"
     pruned_harmonised_effects_df <- data.frame(pruned_harmonised_effects)
     slopehunter_result <- SlopeHunter::hunt(
       dat = pruned_harmonised_effects_df,
@@ -97,34 +103,29 @@ correct_for_collider_bias <- function(incidence_gwas,
       xp_thresh = p_value_threshold
     )
 
-    slopehunter_estimated_slope <- slopehunter_result$b
-    slopehunter_estimated_slope_standard_error <- slopehunter_result$bse
-
-    entropy <- slopehunter_result$entropy
+    slopehunter_beta <- slopehunter_result$b
+    slopehunter_se <- slopehunter_result$bse
     fit <- slopehunter_result$Fit
-    hunted <- table(fit$clusters)[1]
-    pleiotropic <- table(fit$clusters)[2]
 
     collider_bias_results <- collider_bias_results %>% dplyr::add_row(
-      METHOD = collider_bias_type,
+      METHOD = collider_bias_type$slopehunter,
       P_VAL_THRESHOLD = p_value_threshold,
-      BETA = slopehunter_estimated_slope,
-      SE = slopehunter_estimated_slope_standard_error,
-      HUNTED = hunted,
-      ENTROPY = entropy,
-      PLEIOTROPIC = pleiotropic
+      BETA = slopehunter_beta,
+      SE = slopehunter_se,
+      HUNTED = table(fit$clusters)[1],
+      ENTROPY = slopehunter_result$entropy,
+      PLEIOTROPIC = table(fit$clusters)[2]
     )
 
-    harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, collider_bias_type, slopehunter_estimated_slope, slopehunter_estimated_slope_standard_error)
+    harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, collider_bias_type$slopehunter, slopehunter_beta, slopehunter_se)
+    save_subsequent_adjusted(collider_bias_type$slopehunter, subsequent, harmonised_effects, slopehunter_adjusted_file)
   }
 
   if (include_dudbridge) {
     suppressPackageStartupMessages(library(MendelianRandomization))
     print("Starting Dudbridge")
 
-    collider_bias_type <- "dudbridge"
-
-    weighted_dudbridge <- MendelianRandomization::mr_ivw(mr_input(
+    weighted_dudbridge <- MendelianRandomization::mr_ivw(MendelianRandomization::mr_input(
       bx = pruned_harmonised_effects$BETA.incidence,
       bxse = pruned_harmonised_effects$SE.incidence,
       by = pruned_harmonised_effects$BETA.prognosis,
@@ -142,10 +143,11 @@ correct_for_collider_bias <- function(incidence_gwas,
     dudbridge_estimated_slope <- weighted_dudbridge$Estimate * weighting
     dudbridge_estimated_slope_standard_error <- weighted_dudbridge$StdError * weighting
 
-    harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, collider_bias_type, dudbridge_estimated_slope, dudbridge_estimated_slope_standard_error)
+    harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, collider_bias_type$dudbridge, dudbridge_estimated_slope, dudbridge_estimated_slope_standard_error)
+    save_subsequent_adjusted(collider_bias_type$dudbridge, subsequent, harmonised_effects, dudbridge_adjusted_file)
 
     collider_bias_results <- collider_bias_results %>% dplyr::add_row(
-      METHOD = collider_bias_type,
+      METHOD = collider_bias_type$dudbridge,
       P_VAL_THRESHOLD = p_value_threshold,
       BETA = dudbridge_estimated_slope,
       SE = dudbridge_estimated_slope_standard_error,
@@ -154,9 +156,53 @@ correct_for_collider_bias <- function(incidence_gwas,
       PLEIOTROPIC = NA
     )
   }
+  # if (include_ivw) {
+  #   library(TwoSampleMR, quietly = T)
+  #   incidence_mr <- TwoSampleMR::read_exposure_data(incidence_gwas,
+  #                                    sep="\t",
+  #                                    snp_col="SNP",
+  #                                    effect_allele_col = "ALLELE1",
+  #                                    other_allele_col = "ALLELE0",
+  #                                    eaf_col="A1FREQ",
+  #                                    pval_col="P_BOLT_LMM_INF",
+  #                                    beta_col="BETA",
+  #                                    se_col="SE",
+  #                                    chr_col="CHR",
+  #                                    pos_col="BP"
+  #   )
+  #   incidence_mr<-subset(incidence_mr, pval.exposure<=5e-8)
+  #   incidence_mr<-subset(incidence_mr, (SNP %in% clumped_snps) == TRUE)
+  #   incidence_mr$exposure <- "incidence"
+  #   incidence_mr$id.exposure <- "incidence"
+  #   incidence_mr <- subset(incidence_mr, duplicated(incidence_mr) == FALSE)
+  #   incidence_mr$mr_keep.exposure <- TRUE
+  #
+  #   progression<-read_outcome_data(file=subsequent_gwas,
+  #                                  snp_col="SNP",
+  #                                  snps = incidence_mr$SNP,
+  #                                  effect_allele_col = "EA",
+  #                                  other_allele_col = "OA",
+  #                                  pval_col="P",
+  #                                  beta_col="BETA",
+  #                                  se_col="SE",
+  #                                  chr_col="CHR",
+  #                                  pos_col="BP",
+  #                                  sep="\t"
+  #   )
+  #
+  #   progression<-subset(progression, select = -c(eaf.outcome))
+  #   progression<-merge(progression, af_plink, by="SNP")
+  #   dat<-harmonise_data(incidence_mr, progression)
+  #   dat$beta.outcome<-log(dat$beta.outcome)
+  #
+  #   mr_res<-TwoSampleMR::mr(dat, method_list = c("mr_ivw","mr_egger_regression", "mr_weighted_median","mr_weighted_mode"))
+  #   write.table(mr_res, file=paste(filenames[k],"_MR_results.txt",sep=""), row.names=F, quote=F)
+  #
+  #   cf.mr<-mr_res[1,7]
+  #   cf.se.mr<-mr_res[1,8]
+  #
+  # }
   data.table::fwrite(collider_bias_results, collider_bias_results_file, sep="\t")
-  # TODO: should we save a file for each collider bias correction?
-  data.table::fwrite(harmonised_effects, collider_bias_adjusted_file, sep = "\t")
 }
 
 #' adjust_gwas_data_from_weights: Apply a slope correction weight (and SE) to an existing GWAS
@@ -164,15 +210,14 @@ correct_for_collider_bias <- function(incidence_gwas,
 #'   Currently used to work on a GWAS result of Slopehunter.
 #'
 #' @param gwas: a dataframe that includes BETA.incidence, BETA.prognosis, SE.incidence, SE.prognosis
-#' @param type_of_adjustment: string name of adjustment (eg. SLOPEHUNTER)
+#' @param collider_bias_type: string name of adjustment (eg. SLOPEHUNTER)
 #' @param slope: number, slope of the correction
 #' @param slope_standard_error: number, SE of the corrected slope
 #' @return gwas with 3 additional columns BETA_{name}, SE_{name}, and P_{name}
-adjust_gwas_data_from_weights <- function(gwas, type_of_adjustment, slope, slope_standard_error) {
-  type_of_adjustment <- tolower(type_of_adjustment)
-  adjusted_beta <- paste0("BETA.", type_of_adjustment)
-  adjusted_se <- paste0("SE.", type_of_adjustment)
-  adjusted_p <- paste0("P.", type_of_adjustment)
+adjust_gwas_data_from_weights <- function(gwas, collider_bias_type, slope, slope_standard_error) {
+  adjusted_beta <- paste0("BETA.", collider_bias_type)
+  adjusted_se <- paste0("SE.", collider_bias_type)
+  adjusted_p <- paste0("P.", collider_bias_type)
 
   gwas[[adjusted_beta]] <- (gwas$BETA.prognosis - (slope * gwas$BETA.incidence))
 
@@ -189,4 +234,12 @@ adjust_gwas_data_from_weights <- function(gwas, type_of_adjustment, slope, slope
   )
 
   return(gwas)
+}
+
+save_subsequent_adjusted <- function(collider_bias_type, gwas, harmonised_effects, output_file) {
+  gwas$P <- harmonised_effects[[paste0("P.", collider_bias_type)]]
+  gwas$SE <- harmonised_effects[[paste0("SE.", collider_bias_type)]]
+  gwas$BETA <- harmonised_effects[[paste0("BETA.", collider_bias_type)]]
+
+  data.table::fwrite(gwas, output_file, sep = "\t")
 }

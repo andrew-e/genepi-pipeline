@@ -3,21 +3,19 @@ singularity: "docker://andrewrrelmore/genepi_pipeline:test"
 
 ancestry = "EUR"
 incidence_gwas = "/user/work/wt23152/test_data/incidence.tsv"
-incidence_gwas = "/user/work/wt23152/test_data/test_data.tsv.gz"
 subsequent_gwas = "/user/work/wt23152/test_data/subsequent.tsv"
 
 onstart:
-    print("##### Bluepint for Collider Bias Correction Pipeline #####") 
+    print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
 
 
 clumped_incidence = DATA_DIR + "clumped_snps/" + file_prefix(incidence_gwas)
 collider_bias_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"
-adjusted_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_adjusted.tsv.gz"
-#slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
-#dudbridge_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_dudbridge.tsv.gz"
+slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
+dudbridge_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_dudbridge.tsv.gz"
 
 rule all:
-    input: collider_bias_results, adjusted_results
+    input: collider_bias_results, slopehunter_results, dudbridge_results
 
 #rule standardise_gwas:
 #    shell:
@@ -50,7 +48,8 @@ rule collider_bias_correction:
         clumped_file = clumped_incidence + ".clumped"
     output:
         results = collider_bias_results,
-        adjusted = adjusted_results
+        slophunter_adjusted = slopehunter_results,
+        dudbridge_adjusted = dudbridge_results
     shell:
         """
         Rscript /home/r_scripts/correct_for_collider_bias.r \
@@ -58,7 +57,8 @@ rule collider_bias_correction:
             --subsequent_gwas {input.subsequent_gwas} \
             --clumped_file {input.clumped_file} \
             --collider_bias_results_output {output.results} \
-            --collider_bias_adjusted_output {output.adjusted}
+            --collider_bias_slopehunter_output {output.slophunter_adjusted} \
+            --collider_bias_dudbridge_output {output.dudbridge_adjusted}
         """
 
 #rule compare_and_plot_collider_bias_corrections:
