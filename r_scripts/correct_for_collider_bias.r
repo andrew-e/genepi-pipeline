@@ -15,20 +15,19 @@ parser <- add_argument(parser, "--clumped_file",
                        help = "Clumped SNP list to run collider bias corrections against",
                        type = "character"
 )
+parser <- add_argument(parser, "--collider_bias_results_output",
+                       help = "Output file comparing Collider Bias Slopes",
+                       type = "character"
+)
 parser <- add_argument(parser, "--collider_bias_slopehunter_output",
                        help = "Output file of SlopeHunter Corrected GWAS",
                        type = "character"
 )
 parser <- add_argument(parser, "--collider_bias_dudbridge_output",
                        help = "Output file of Dudbridge Corrected GWAS",
-                       help = "Output file of Collider Bias Slopes",
                        type = "character"
 )
-parser <- add_argument(parser, "--collider_bias_adjusted_output",
-                       help = "Output file of Collider Bias corrected GWAS results",
-                       type = "character"
-)
-parser <- add_argument(parser, "--p_value_threshold", 
+parser <- add_argument(parser, "--p_value_threshold",
                        help = "p value threshold to run corrections",
                        type = "numeric", default = 0.001
 )
