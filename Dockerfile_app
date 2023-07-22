@@ -1,4 +1,4 @@
-FROM andrewrrelmore/genepi_pipeline_base:latest
+FROM andrewrrelmore/genepi_pipeline_base:test
 
 COPY r_scripts /home/r_scripts
 

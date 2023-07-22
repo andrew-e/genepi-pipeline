@@ -166,6 +166,10 @@ standardise_alleles <- function(gwas_input) {
   gwas$NONEA[to_flip] <- gwas$EA[to_flip]
   gwas$EA[to_flip] <- temp
 
+  if(default_columns$SNP %in% colnames(gwas)) {
+    gwas$OLD_SNP <- gwas$SNP
+  }
+
   gwas$SNP <- paste0(gwas$CHR, ":", gwas$BP, "_", gwas$EA, "_", gwas$NONEA)
   gwas <- arrange(CHR, BP) %>%
     select(default_columns$SNP, default_columns$CHR, default_columns$BP, default_columns$EA, default_columns$OA,

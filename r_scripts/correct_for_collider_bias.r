@@ -6,7 +6,6 @@ parser <- arg_parser("Correct for Collider Bias between incidence and subsequent
 parser <- add_argument(parser, "--incidence_gwas",
                        help = "Indience GWAS",
                        type = "character"
-
 )
 parser <- add_argument(parser, "--subsequent_gwas",
                        help = "Subsequent GWAS",
@@ -38,14 +37,14 @@ parser <- add_argument(parser, "--include_dudbridge",
 )
 
 args <- parse_args(parser)
-p_value_threshold <- as.numeric(args.p_value_threshold)
+p_value_threshold <- as.numeric(args$p_value_threshold)
 
-correct_for_collider_bias(args.incidence_gwas,
-                          args.subsequent_gwas,
-                          args.clumped_file,
-                          args.collider_bias_results_output,
-                          args.collider_bias_adjusted_output,
+correct_for_collider_bias(args$incidence_gwas,
+                          args$subsequent_gwas,
+                          args$clumped_file,
+                          args$collider_bias_results_output,
+                          args$collider_bias_adjusted_output,
                           p_value_threshold,
-                          args.include_slopehunter,
-                          args.include_dudbridge
+                          args$include_slopehunter,
+                          args$include_dudbridge
 )

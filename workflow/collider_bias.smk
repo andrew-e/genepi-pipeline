@@ -19,7 +19,15 @@ adjusted_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) 
 rule all:
     input: collider_bias_results, adjusted_results
 
+#rule standardise_gwas:
+#    shell:
+#        """
+#        Rscript /home/r_scripts/standardise_gwas.r --populate_rsid TRUE
+#        """
+
 rule clump_incidence_gwas:
+    resources:
+        mem = 4000
     input:
         clump_dir = DATA_DIR + "clumped_snps",
         gwas = incidence_gwas,
@@ -33,6 +41,9 @@ rule clump_incidence_gwas:
         """
 
 rule collider_bias_correction:
+    threads: 4
+    resources:
+        mem = 16000
     input:
         incidence_gwas = incidence_gwas,
         subsequent_gwas = subsequent_gwas,
@@ -46,16 +57,16 @@ rule collider_bias_correction:
             --incidence_gwas {input.incidence_gwas} \
             --subsequent_gwas {input.subsequent_gwas} \
             --clumped_file {input.clumped_file} \
-            --collider_bias_results_output {output.results}
+            --collider_bias_results_output {output.results} \
             --collider_bias_adjusted_output {output.adjusted}
         """
 
 #rule compare_and_plot_collider_bias_corrections:
 #    input:
-#        gwas: expand(DATA_DIR + "/gwas_{ancestry}.tsv", ancestry=ANCESTRIES),
-#        clumped_files: expand(DATA_DIR + "/gwas_{ancestry}.tsv", ancestry=ANCESTRIES)
+#        gwas: expand(DATA_DIR + "gwas_{ancestry}.tsv", ancestry=ANCESTRIES),
+#        clumped_files: expand(DATA_DIR + "gwas_{ancestry}.tsv", ancestry=ANCESTRIES)
 #    output:
-#        miami_plot_or_something: RESULTS_DIR + "/plots/comparsion_heterogeneity_snps.png"
+#        miami_plot_or_something: RESULTS_DIR + "plots/comparsion_heterogeneity_snps.png"
 #    shell:
 #        """
 #        Rscript compare_and_plot_collider_bias_corrections.r --gwases {gwases} \

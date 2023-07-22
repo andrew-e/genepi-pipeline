@@ -11,6 +11,7 @@ collider_bias_results <- data.frame(
 #' correct_for_collider_bias: do a bunch of collider bias corrections.  Including:
 #'  * SlopeHunter
 #'  * Dudbridge Correction
+#'  * MR IVW
 #'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 #' @examples
@@ -24,12 +25,13 @@ correct_for_collider_bias <- function(incidence_gwas,
                                       include_slopehunter = T,
                                       include_dudbridge = T,
                                       include_ivw = F) {
-  suppressPackageStartupMessages(library(tidyverse))
-  suppressPackageStartupMessages(library(SlopeHunter))
+  library(dplyr, quietly = TRUE)
+  library(SlopeHunter, quietly = TRUE)
 
-  clumped_snps <- data.table::fread(clumped_snps_file)$SNP
+  clumped_snps <- data.table::fread(clumped_snps_file)
   incidence <- data.table::fread(incidence_gwas)
-  clumped_snps <- map_snp_to_rsid(incidence, clumped_snps)
+  clumped_snps <- map_rsid_list_to_snps(incidence, clumped_snps$SNP)
+  print(paste("Found", length(clumped_snps), "in incidence GWAS for clumping"))
 
   incidence <- SlopeHunter::read_incidence(incidence_gwas,
     snp_col = "SNP",
@@ -72,11 +74,11 @@ correct_for_collider_bias <- function(incidence_gwas,
 
   harmonised_effects <- harmonised_effects[!harmonised_effects$remove, ]
   harmonised_effects <- subset(harmonised_effects, remove == FALSE | (palindromic == TRUE & remove == TRUE))
+  clumped_snps <- tolower(clumped_snps)
 
   pruned_harmonised_effects <- subset(harmonised_effects, (SNP %in% clumped_snps) == TRUE)
   pruned_harmonised_effects <- subset(pruned_harmonised_effects, is.na(BETA.prognosis) == FALSE)
   pruned_harmonised_effects <- subset(pruned_harmonised_effects, BETA.prognosis < 10)
-
 
   if (include_slopehunter) {
     print("Starting SlopeHunter")
@@ -103,7 +105,7 @@ correct_for_collider_bias <- function(incidence_gwas,
     hunted <- table(fit$clusters)[1]
     pleiotropic <- table(fit$clusters)[2]
 
-    collider_bias_results <- collider_bias_results %>% add_row(
+    collider_bias_results <- collider_bias_results %>% dplyr::add_row(
       METHOD = collider_bias_type,
       P_VAL_THRESHOLD = p_value_threshold,
       BETA = slopehunter_estimated_slope,
@@ -142,7 +144,7 @@ correct_for_collider_bias <- function(incidence_gwas,
 
     harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, collider_bias_type, dudbridge_estimated_slope, dudbridge_estimated_slope_standard_error)
 
-    collider_bias_results <- collider_bias_results %>% add_row(
+    collider_bias_results <- collider_bias_results %>% dplyr::add_row(
       METHOD = collider_bias_type,
       P_VAL_THRESHOLD = p_value_threshold,
       BETA = dudbridge_estimated_slope,
@@ -154,7 +156,7 @@ correct_for_collider_bias <- function(incidence_gwas,
   }
   data.table::fwrite(collider_bias_results, collider_bias_results_file, sep="\t")
   # TODO: should we save a file for each collider bias correction?
-  data.table::frwite(harmonised_effects, collider_bias_adjusted_file, sep = "\t")
+  data.table::fwrite(harmonised_effects, collider_bias_adjusted_file, sep = "\t")
 }
 
 #' adjust_gwas_data_from_weights: Apply a slope correction weight (and SE) to an existing GWAS
