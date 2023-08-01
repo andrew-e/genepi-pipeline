@@ -1,4 +1,4 @@
-source("/home/r_scripts/load.r")
+source("load.r")
 library(argparser, quietly = TRUE)
 
 parser <- arg_parser("Correct for Collider Bias between incidence and subsequent GWASes")

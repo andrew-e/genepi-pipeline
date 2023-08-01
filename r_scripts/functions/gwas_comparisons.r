@@ -1,5 +1,4 @@
-source("/home/r_scripts/functions/util.r")
-
+source("functions/util.r")
 
 #' Expected vs observed replication rates
 #'
@@ -40,31 +39,4 @@ expected_vs_observed_replication <- function(b_disc, b_rep, se_disc, se_rep, alp
       )
 
     return(list(res = res, variants = dplyr::tibble(sig = p_sig, sign = p_sign)))
-}
-
-#' harmoise_gwases: takes a list of gwas filenames, and ensures that all effect allele, other allele,
-#'  frequency, and beta values are aligned, then saves the files
-#'
-#' @param: gwas_filenames
-#' #' harmonise_gwases: takes a list of gwases, standardises the alleeles and SNP name,
-#'     then finds the intersection of shared SNPs
-#'
-#' @param: elipses of gwases
-#' @return: list of harmonised gwases
-#'
-harmonise_gwases <- function(...) {
-    gwases <- list(...)
-
-    # standardise each dataset and get new snp IDs
-    gwases <- lapply(gwases, standardise_alleles)
-
-    # get the SNPs in common across all datasets arrange to be in the same order
-    snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
-    gwases <- lapply(gwases, function(gwas) {
-        gwas %>%
-        filter(SNP %in% snpids) %>%
-        arrange(CHR, BP, EA, NONEA)
-    })
-
-    return(gwases)
 }

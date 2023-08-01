@@ -210,7 +210,7 @@ correct_for_collider_bias <- function(incidence_gwas,
 #'   Currently used to work on a GWAS result of Slopehunter.
 #'
 #' @param gwas: a dataframe that includes BETA.incidence, BETA.prognosis, SE.incidence, SE.prognosis
-#' @param collider_bias_type: string name of adjustment (eg. SLOPEHUNTER)
+#' @param collider_bias_type: string name of adjustment (eg. slopehunter)
 #' @param slope: number, slope of the correction
 #' @param slope_standard_error: number, SE of the corrected slope
 #' @return gwas with 3 additional columns BETA_{name}, SE_{name}, and P_{name}
@@ -237,9 +237,14 @@ adjust_gwas_data_from_weights <- function(gwas, collider_bias_type, slope, slope
 }
 
 save_subsequent_adjusted <- function(collider_bias_type, gwas, harmonised_effects, output_file) {
-  gwas$P <- harmonised_effects[[paste0("P.", collider_bias_type)]]
-  gwas$SE <- harmonised_effects[[paste0("SE.", collider_bias_type)]]
-  gwas$BETA <- harmonised_effects[[paste0("BETA.", collider_bias_type)]]
+  harmonised_effects$SNP <- toupper(harmonised_effects$SNP)
+  adjusted_beta <- paste0("BETA.", collider_bias_type)
+  adjusted_se <- paste0("SE.", collider_bias_type)
+  adjusted_p <- paste0("P.", collider_bias_type)
+
+  gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
+  gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%
+    rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
 
   data.table::fwrite(gwas, output_file, sep = "\t")
 }

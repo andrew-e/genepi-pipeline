@@ -1,5 +1,4 @@
-source("/home/r_scripts/load.r")
-
+source("load.r")
 library(argparser, quietly = TRUE)
 
 parser <- arg_parser("Create a manhattan plot from GWAS summary statistics")
@@ -11,4 +10,4 @@ parser <- add_argument(parser, "--title", help = "title of plot", default = "Com
 
 args <- parse_args(parser)
 
-manhattan_and_qq(args$first_gwas, args$second_gwas, args$miami_filename, args$title)
+miami_plot(args$first_gwas, args$second_gwas, args$miami_filename, args$title)
