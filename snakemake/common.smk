@@ -49,7 +49,7 @@ def copy_data_to_rdfs(files_created):
         print(f"Files successfully copied to {RDFS_DIR}")
 
 
-def onsuccess_message(files_created):
+def onsuccess(files_created):
    print("\nWorkflow finished, no errors.  List of created files:")
    print(*files_created, sep='\n')
    copy_data_to_rdfs(files_created)
@@ -57,7 +57,7 @@ def onsuccess_message(files_created):
 
 def onerror_message():
     last_log = subprocess.check_output(f"ls -t {slurm_log_directory} | head -n1", shell=True, universal_newlines=True)
-    print("There was an error in the pipeline, please check the last written slurm log to see the error:")
+    print("\nThere was an error in the pipeline, please check the last written slurm log to see the error:")
     print(slurm_log_directory + last_log)
 
 
@@ -69,8 +69,14 @@ if not os.getenv("RDFS_DIR"):
     print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
 
 
+if not os.getenv("RDFS_DIR"):
+    print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
+
 DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
 RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
 RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
+
+if not RDFS_DIR.endswith("working/"):
+    raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")
 
 cleanup_old_slurm_logs()

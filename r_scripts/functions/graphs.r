@@ -1,8 +1,11 @@
 source("functions/util.r")
 
 forest_plot <- function(table, output_file) {
+  library(ggplot2, quietly = T)
+  create_dir_for_files(output_file)
+
   if (!all(c("BETA", "SE") %in% names(table))) {
-    stop("data frame needs to have BETA and SE named columns")
+    stop("data frame needs to have BETA and SE columns")
   }
 
   first_column_name <- colnames(table)[1]
@@ -29,30 +32,25 @@ forest_plot <- function(table, output_file) {
 #' @param save_dir: defaults to 'scratch/results'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq = T) {
-  library(qqman)
+  library(qqman, quietly = T)
+  library(vroom, quietly = T)
   create_dir_for_files(manhattan_filename, qq_filename)
 
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
-  gwas <- data.table::fread(gwas_filename, select = manhattan_columns)
+  gwas <- vroom::vroom(gwas_filename, col_select = manhattan_columns)
   gwas <- gwas[complete.cases(gwas), ]
 
   png(manhattan_filename, width = 1500, height = 500)
-  qqman::manhattan(gwas,
-    chr = chr,
-    bp = bp,
-    p = p,
-    snp = snp,
-    main = "Manhattan plot of GWAS"
-  )
+  qqman::manhattan(gwas, main = "Manhattan plot of GWAS")
   dev.off()
 
   if (include_qq) {
     png(qq_filename, width = 500, height = 500)
 
     qqman::qq(gwas$P, main = "Q-Q plot of GWAS p-values")
-
     lambda <- median(qchisq(1 - gwas$P, 1)) / qchisq(0.5, 1)
     text(0.5, 4, paste("lambda", "=", signif(lambda, digits = 3)))
+
     dev.off()
   }
 }
@@ -73,6 +71,7 @@ miami_plot <- function(first_gwas_filename,
                        range = NA) {
   library(qqman, quietly=T)
   library(vroom, quietly=T)
+  create_dir_for_files(miami_plot_file)
 
   show_specific_region <- !is.na(chr) & !is.na(bp) & !is.na(range)
 

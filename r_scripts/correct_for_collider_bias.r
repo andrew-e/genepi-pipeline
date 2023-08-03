@@ -23,33 +23,23 @@ parser <- add_argument(parser, "--collider_bias_slopehunter_output",
                        help = "Output file of SlopeHunter Corrected GWAS",
                        type = "character"
 )
-parser <- add_argument(parser, "--collider_bias_dudbridge_output",
-                       help = "Output file of Dudbridge Corrected GWAS",
+parser <- add_argument(parser, "--harmonised_effects_output",
+                       help = "Output file of the harmonised effects file created by slopehunter, used in corrections",
                        type = "character"
 )
-parser <- add_argument(parser, "--p_value_threshold",
+parser <- add_argument(parser, "--p_value_thresholds",
                        help = "p value threshold to run corrections",
-                       type = "numeric", default = 0.001
-)
-parser <- add_argument(parser, "--include_slopehunter",
-                       help = "Run slopehunter collider bias correction",
-                       type = "logical", default = T
-)
-parser <- add_argument(parser, "--include_dudbridge",
-                       help = "Run dudbridge collider bias correction",
-                       type = "logical", default = T
+                       type = "character", default = "0.1,0.01,0.001,1e-05"
 )
 
 args <- parse_args(parser)
-p_value_threshold <- as.numeric(args$p_value_threshold)
+p_value_thresholds <- as.numeric(split_string_into_vector(args$p_value_thresholds))
 
 correct_for_collider_bias(args$incidence_gwas,
                           args$subsequent_gwas,
                           args$clumped_file,
                           args$collider_bias_results_output,
+                          args$harmonised_effects_output,
                           args$collider_bias_slopehunter_output,
-                          args$collider_bias_dudbridge_output,
-                          p_value_threshold,
-                          args$include_slopehunter,
-                          args$include_dudbridge
+                          p_value_thresholds
 )

@@ -6,6 +6,8 @@
 coloc_analysis <- function(first_gwas, second_gwas, output_file) {
     library(vroom, quietly=T)
     library(coloc, quietly=T)
+    create_dir_for_files(output_file)
+
     coloc_columns <- c("SNP", "P", "SE", "N", "EAF")
 
     if (!is.data.frame(first_gwas)) {

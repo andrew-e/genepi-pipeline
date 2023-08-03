@@ -31,7 +31,7 @@ format_gwas_output <- function(file_gwas, output_file, output_format="default") 
   gwas <- vroom::vroom(file_gwas) %>%
     change_column_names(column_map[[output_format]], opposite_mapping = T)
 
-  vroom:vroom_write(gwas, output_file)
+  vroom:vroom_write(gwas, output_file, delim="\t")
 }
 
 standardise_columns <- function(gwas) {

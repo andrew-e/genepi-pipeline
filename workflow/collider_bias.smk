@@ -10,12 +10,13 @@ onstart:
 
 standardised_incidence_gwas = DATA_DIR + "gwas/" + file_prefix(incidence_gwas) + "_standardised.tsv.gz"
 standardised_subsequent_gwas = DATA_DIR + "gwas/" + file_prefix(subsequent_gwas) + "_standardised.tsv.gz"
+
 clumped_incidence_prefix = DATA_DIR + "clumped_snps/" + file_prefix(incidence_gwas)
 clumped_incidence = clumped_incidence_prefix + ".clumped"
 
-collider_bias_results = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"
-harmonised_effects = RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_harmonised_effects.tsv.gz"
-slopehunter_results= RESULTS_DIR + "collier_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
+collider_bias_results = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"
+harmonised_effects = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_harmonised_effects.tsv.gz"
+slopehunter_results = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
 
 unadjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(subsequent_gwas) + "_miami_plot.png"
 slopehunter_adjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(slopehunter_results) + "_miami_plot.png"
@@ -127,8 +128,7 @@ files_created = [standardised_incidence_gwas,
 ]
 
 onsuccess:
-    onsuccess_message(files_created)
+    onsuccess(files_created)
 
 onerror:
     onerror_message()
-
