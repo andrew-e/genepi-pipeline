@@ -15,7 +15,11 @@ onstart:
 standardised_incidence_gwas = DATA_DIR + "gwas/" + file_prefix(incidence_gwas) + "_standardised.tsv.gz"
 standardised_subsequent_gwas = DATA_DIR + "gwas/" + file_prefix(subsequent_gwas) + "_standardised.tsv.gz"
 
-clumped_incidence_prefix = DATA_DIR + "clumped_snps/" + file_prefix(incidence_gwas)
+clump_dir = DATA_DIR + "clumped_snps/"
+if not os.path.isdir(clump_dir):
+   os.makedirs(clump_dir)
+
+clumped_incidence_prefix = clump_dir + file_prefix(incidence_gwas)
 clumped_incidence = clumped_incidence_prefix + ".clumped"
 
 collider_bias_results = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"

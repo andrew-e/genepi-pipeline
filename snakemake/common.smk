@@ -85,7 +85,7 @@ DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
 RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
 RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
 
-if not RDFS_DIR.endswith("working/"):
+if RDFS_DIR and RDFS_DIR.endswith("working/"):
     raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")
 
 cleanup_old_slurm_logs()
