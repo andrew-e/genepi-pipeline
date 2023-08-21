@@ -1,6 +1,30 @@
-source("functions/util.r")
+#TODO: a sort of specific grouped forest plot (maybe comparing ancestries?)
+# forest_plot <- function(sslist, snp)
+# {
+#    tibble(
+#        beta = sapply(sslist, \(x) x$bhat[snp]),
+#        se = sapply(sslist, \(x) x$se[snp]),
+#        label = names(sslist)
+#    ) %>%
+#    ggplot(., aes(x=beta, y=label)) +
+#    geom_point() +
+#    geom_errorbarh(aes(xmin=beta-se*1.96, xmax=beta+se*1.96), height=0) +
+#    geom_vline(xintercept=0, linetype="dotted") +
+#    labs(x="beta", y="population")
+# }
+#
+# alpha = 0.05/nrow(gwas_1$snp)
+#
+# list <- c("first_gwas", "second_gwas", "third_gwas", "fourth_gwas")
+#
+# index <- which(first_gwas$pval < 5e-8)
+# o_first_second <- expected_vs_observed_replication(first_gwas$bhat[index], second_gwas$bhat[index], third_gwas$se[index], fourth_gwas$se[index], 0.05)
+#
+# png("expected_observed_fail_first_second_forest_plot.png", width = 4, height = 4, units = 'in', res = 300)
+# forest_plot(list(eur=first_gwas, afr=second_gwas, eas=third_gwas, sas=fourth_gwas), index[which(o_first_second$variants$sign_fail)[3]])
+# dev.off()
 
-forest_plot <- function(table, output_file) {
+forest_plot <- function(table, title, output_file) {
   library(ggplot2, quietly = T)
   create_dir_for_files(output_file)
 
@@ -15,13 +39,51 @@ forest_plot <- function(table, output_file) {
   table$LL <- table$BETA - (1.96 * table$SE)
   table$UL <- table$BETA + (1.96 * table$SE)
 
-  ggplot(
-    table,
-    aes(y = .data[[first_column_name]], x = BETA, xmin = LL, xmax = UL, color = .data[[first_column_name]])
-  ) +
+  ggplot(table,
+         aes(y = .data[[first_column_name]], x = BETA, xmin = LL, xmax = UL, color = .data[[first_column_name]]) ) +
     geom_pointrange(cex = 1) +
     geom_vline(xintercept = 0) +
-    theme(legend.position = "none")
+    theme(legend.position = "none") +
+    ggtitle(title)
+
+  ggsave(output_file)
+}
+
+grouped_forest_plot <- function(table, title, group_column, output_file, p_value_column = NA, q_stat_column = NA) {
+  library(ggplot2, quietly = T)
+  if (!("BETA" %in% names(table)) || !("SE" %in% names(table))) {
+    stop("data frame needs to have BETA and SE named columns")
+  }
+
+  first_column_name <- colnames(table)[1]
+
+  table$BETA <- as.numeric(table$BETA)
+  table$SE <- as.numeric(table$SE)
+
+  table$LL <- table$BETA - (1.96 * table$SE)
+  table$UL <- table$BETA + (1.96 * table$SE)
+
+  plot_thing <- ggplot(table,
+         aes(y = if(!is.na(q_stat_column)) paste0(.data[[first_column_name]], "\n Q-stat=", .data[[q_stat_column]]) else .data[[first_column_name]],
+             x = BETA,
+             xmin = LL,
+             xmax = UL,
+             color=.data[[group_column]],
+             fill=.data[[group_column]])) +
+    ylab(first_column_name) +
+    geom_vline(xintercept = 0) +
+    geom_pointrange(cex = 1, fatten = 2.5, position=position_dodge(width = 0.5)) +
+    theme(legend.position = "bottom") +
+    ggtitle(title)
+
+  if (!is.na(p_value_column)) {
+    plot_thing + geom_text(aes(label = paste("P=", pval_adjusted), group = .data[[group_column]]), position = position_dodge(width = 0.5))
+  }
+  else if (!is.na(q_stat_column)) {
+    plot_thing + geom_text(aes(x = 1.5, label = .data[[q_stat_column]]))
+  }
+
+
   ggsave(output_file)
 }
 
@@ -94,7 +156,7 @@ miami_plot <- function(first_gwas_filename,
     x_lab <- paste("Chromosome", chr)
 
     first_gwas <- subset(first_gwas, CHR == chr)
-    second_gwas <- subset(second_gwas, CHR == chr & BP > (bp - range) & BP < (bp + range))
+    second_gwas <- gwas_region(second_gwas, chr, bp, range)
     top_ylim <-  max(-log10(second_gwas$P))
   }
 

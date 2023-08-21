@@ -20,6 +20,9 @@ test_that("collider_bias.correct_for_collider_bias works well", {
   result <- vroom::vroom(collider_bias_results_file)
   expect_equal(nrow(result), 3)
 
-  expect_true(file.exists(slopehunter_file))
   expect_true(file.exists(harmonised_results))
+  expect_true(file.exists(slopehunter_file))
+
+  slopehunter_result <- vroom::vroom(slopehunter_file)
+  expect_true(all(c("P", "BETA", "SE") %in% colnames(slopehunter_result)))
 })

@@ -4,8 +4,20 @@ from dateutil.relativedelta import relativedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
-slurm_log_directory = f"/user/work/{os.getenv('USER')}/slurm_logs/"
+load_dotenv()
+user = os.getenv('USER')
+slurm_log_directory = f"/user/work/{user}/slurm_logs/"
 docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
+
+def validate_gwases(files):
+    if not all(Path(file).is_file() for file in files):
+        raise ValueError(f"Error: one of the specified files does not exist")
+
+def validate_ancestries(ancestries):
+    allowed_ancestries = ["EUR", "EAS", "AFR", "AMR", "SAS"]
+    if not all(ancestry in allowed_ancestries for ancestry in ancestries):
+        raise ValueError(f"Please ensure all ancestires are one of these values:\n {allowed_ancestries}")
+
 
 def cleanup_old_slurm_logs():
     if not os.path.isdir(slurm_log_directory): return
@@ -61,13 +73,10 @@ def onerror_message():
     print(slurm_log_directory + last_log)
 
 
-load_dotenv()
-
 if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
     raise ValueError("Please populate DATA_DIR and RESULTS_DIR in the .env file provided")
 if not os.getenv("RDFS_DIR"):
     print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
-
 
 if not os.getenv("RDFS_DIR"):
     print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")

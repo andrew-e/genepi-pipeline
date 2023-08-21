@@ -12,10 +12,20 @@ split_string_into_list <- function(input_string) {
 #'
 #' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
 vroom_chr <- function(gwas_file, chr, col_select=NULL) {
-  pipe_command <- paste0("head -n1 ", gwas_file, " && rg '\t", chr, "\t' ", gwas_file)
+  pipe_command <- paste0("head -n1 ", gwas_file, " && rg -Iz '\t", chr, "\t' ", gwas_file)
 
   gwas <- vroom::vroom(pipe(pipe_command, col_select = col_select))
   return(gwas)
+}
+
+gwas_region <- function(gwas, chr, bp, range = 250000) {
+  return(subset(gwas, CHR == chr & BP > (bp - range) & BP < (bp + range)))
+}
+
+file_prefix <- function(file_path) {
+  file_name <- basename(file_path)
+  file_prefix <- sub("\\..*", "", file_name)
+  return(file_prefix)
 }
 
 create_dir_for_files <- function(...) {

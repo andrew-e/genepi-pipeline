@@ -1,9 +1,13 @@
+#FILL IN VARIABLES BELOW
+##############################################
+ancestry = "EUR"
+incidence_gwas = f"/user/work/{user}/test_data/test_data_no_rsid.tsv.gz"
+subsequent_gwas = f"/user/work/{user}/test_data/subsequent.tsv"
+plink_clumping_arguments = "--clump-p2 0.001 --clump-r2 0.3"
+##############################################
+
 include: "../snakemake/common.smk"
 singularity: docker_container
-
-ancestry = "EUR"
-incidence_gwas = "/user/work/wt23152/test_data/test_data_no_rsid.tsv.gz"
-subsequent_gwas = "/user/work/wt23152/test_data/subsequent.tsv"
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
@@ -25,7 +29,7 @@ slopehunter_adjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(slopehunt
 rule all:
     input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot
 
-rule standardise_gwas:
+rule standardise_gwases:
     threads: 4
     resources:
         mem = "16G"
@@ -54,8 +58,11 @@ rule clump_incidence_gwas:
     shell:
         """
         mkdir -p {input.clump_dir}
-        plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/{ancestry} --clump {input.gwas} --clump-snp-field RSID --out {clumped_incidence_prefix}
-            # TODO: choose these values later--clump-p2 0.001 --clump-r2 0.3 
+        plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/{ancestry} \
+            --clump {input.gwas} 
+            --clump-snp-field RSID 
+            --out {clumped_incidence_prefix} \
+            {plink_clumping_arguments}
         """
 
 rule collider_bias_correction:
@@ -117,7 +124,8 @@ rule slopehunter_adjusted_miami_plot:
             --title "Comparing Incidence and SlopeHunter Adjusted Subsequent GWAS"
         """
 
-files_created = [standardised_incidence_gwas,
+files_created = [
+    standardised_incidence_gwas,
     standardised_subsequent_gwas,
     clumped_incidence,
     collider_bias_results,

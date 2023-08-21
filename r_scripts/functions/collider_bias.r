@@ -1,6 +1,6 @@
 collider_bias_type <- list(
   slopehunter = "slopehunter",
-  dudbridge = "dudbridge",
+  cwls = "cwls",
   mr_ivw = "mr_ivw"
 )
 
@@ -16,7 +16,7 @@ collider_bias_results <- data.frame(
 
 #' correct_for_collider_bias: do a bunch of collider bias corrections.  Including:
 #'  * SlopeHunter
-#'  * Dudbridge Correction
+#'  * cwls Correction
 #'  * MR IVW
 #'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
@@ -120,9 +120,9 @@ correct_for_collider_bias <- function(incidence_gwas,
   }
 
   library(MendelianRandomization, quietly = T)
-  print("Starting Dudbridge")
+  print("Starting Dudbridge cwls")
 
-  weighted_dudbridge <- MendelianRandomization::mr_ivw(MendelianRandomization::mr_input(
+  cwls_coreection <- MendelianRandomization::mr_ivw(MendelianRandomization::mr_input(
     bx = pruned_harmonised_effects$BETA.incidence,
     bxse = pruned_harmonised_effects$SE.incidence,
     by = pruned_harmonised_effects$BETA.prognosis,
@@ -137,15 +137,15 @@ correct_for_collider_bias <- function(incidence_gwas,
         (sum(pruned_harmonised_effects$weights * pruned_harmonised_effects$SE.incidence^2))
     )
 
-  dudbridge_estimated_slope <- weighted_dudbridge$Estimate * weighting
-  dudbridge_estimated_slope_standard_error <- weighted_dudbridge$StdError * weighting
+  cwls_estimated_slope <- cwls_coreection$Estimate * weighting
+  cwls_estimated_standard_error <- cwls_coreection$StdError * weighting
 
   collider_bias_results <- collider_bias_results %>% dplyr::add_row(
-    METHOD = collider_bias_type$dudbridge,
+    METHOD = collider_bias_type$cwls,
     P_VALUE_THRESHOLD = NA,
     SNPS_USED = length(clumped_snps),
-    BETA = dudbridge_estimated_slope,
-    SE = dudbridge_estimated_slope_standard_error,
+    BETA = cwls_estimated_slope,
+    SE = cwls_estimated_standard_error,
     ENTROPY = NA,
     PLEIOTROPIC = NA
   )
@@ -244,8 +244,6 @@ save_subsequent_adjusted <- function(collider_bias_type, gwas, harmonised_effect
   adjusted_beta <- paste0("BETA.", collider_bias_type)
   adjusted_se <- paste0("SE.", collider_bias_type)
   adjusted_p <- paste0("P.", collider_bias_type)
-
-  print(head(gwas))
 
   gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
   gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%

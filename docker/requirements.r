@@ -1,5 +1,5 @@
 install.packages(c("R.utils", "argparser", "coloc", "devtools", "MendelianRandomization",
-                   "eeptools", "gmp", "qqman", "corrplot", "broom",
+                   "eeptools", "gmp", "qqman", "corrplot", "broom", "rmarkdown",
                    "conflicted", "nloptr", "Cairo", "plotrix", "forestplot", "dplyr", "BiocManager"),
                  repos = "http://cran.us.r-project.org")
 

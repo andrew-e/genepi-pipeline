@@ -2,9 +2,10 @@ FROM python:3.11-slim
 
 RUN apt update && \
     apt install -y --no-install-recommends r-base=4.2.2.20221110-2 r-base-dev=4.2.2.20221110-2 \
-    build-essential software-properties-common dirmngr gnupg pandoc \
+    build-essential software-properties-common dirmngr gnupg pandoc lmodern texlive-latex-base \
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \ 
     libxml2-dev libcurl4-gnutls-dev libssl-dev libgmp-dev libnlopt-dev cmake libcairo2-dev libxt-dev \
+    texlive-latex-recommended r-cran-sass r-cran-mime \
     plink1.9 sqlite3 wget vim ripgrep && \
     mkdir -p /home/r_scripts && \
     rm -rf /var/lib/apt/lists/*

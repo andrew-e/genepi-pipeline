@@ -14,13 +14,12 @@ standardise_gwas <- function(file_gwas, output_file, input_format="default", pop
   }
   create_dir_for_files(output_file)
   
-  #TODO: if we need to add bespoke input format wrangling here, we can, and default to an else statement
-  #with the below in it.
+  #TODO: if we need to add bespoke input format wrangling here, we can
   
   gwas <- vroom::vroom(file_gwas) %>%
     change_column_names(column_map[[input_format]]) %>%
-    standardise_columns() %>%
     standardise_alleles() %>%
+    standardise_columns() %>%
     health_check() %>%
     populate_rsid_from_1000_genomes(populate_rsid)
 
@@ -36,7 +35,9 @@ format_gwas_output <- function(file_gwas, output_file, output_format="default") 
 
 standardise_columns <- function(gwas) {
   if (!all(c("CHR", "BP") %in% colnames(gwas))) {
-    gwas <- separate(data = gwas, col = "SNP", into = c("CHR", "BP"), sep = "[:_]", remove = F)
+    if(all(grepl("\\d:\\d", gwas$SNP))) {
+      gwas <- tidyr::separate(data = gwas, col = "SNP", into = c("CHR", "BP"), sep = "[:_]", remove = F)
+    }
   }
 
   if (all(c("OR", "OR_LB", "OR_UB") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
@@ -134,10 +135,12 @@ harmonise_gwases <- function(...) {
   gwases <- list(...)
 
   snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
-  print(paste("Number of shared SNPs:", length(snpids)))
+  print(paste("Number of shared SNPs after harmonisation:", length(snpids)))
 
   gwases <- lapply(gwases, function(gwas) {
-    gwas %>% filter(SNP %in% snpids)
+    gwas %>%
+      dplyr::filter(SNP %in% snpids) %>%
+      dplyr::arrange(SNP)
   })
 
   return(gwases)
@@ -148,6 +151,7 @@ populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
 
   if(column_map$default$RSID %in% colnames(gwas)) {
     print("GWAS already has an RSID field, will not overwrite")
+    return(gwas)
   }
   print("populating RSID...")
 
