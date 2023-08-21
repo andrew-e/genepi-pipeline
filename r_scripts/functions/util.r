@@ -1,7 +1,7 @@
 dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
 
 split_string_into_vector <- function(input_string) {
-  return(unlist(strsplit(input_string, ',')))
+  return(unlist(strsplit(input_string, ', ')))
 }
 
 split_string_into_list <- function(input_string) {

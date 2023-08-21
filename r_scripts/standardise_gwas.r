@@ -5,7 +5,8 @@ parser <- arg_parser("Standardise a GWAS to be ready for the rest of the pipelin
 
 parser <- add_argument(parser, "--input_gwas",
                        help = "Comma separated list of filenames of GWASes to standardise",
-                       type = "character"
+                       type = "character",
+                       nargs = Inf
 )
 parser <- add_argument(parser, "--input_format",
                        help = "Input format of the gwas (ie. METAL, BOLT, plink)",
@@ -14,7 +15,8 @@ parser <- add_argument(parser, "--input_format",
 )
 parser <- add_argument(parser, "--output_gwas",
                        help = "Comma separated list of filenames of the standardised GWASes",
-                       type = "character"
+                       type = "character",
+                       nargs = Inf
 )
 parser <- add_argument(parser, "--populate_rsid",
                        help = "Should GWAS Populate RSID (based on 1000 genomes data)",

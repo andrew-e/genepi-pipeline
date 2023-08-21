@@ -2,6 +2,7 @@
 
 source("functions/util.r")
 source("functions/gwas_formatting.r")
+source("functions/gwas_comparisons.r")
 source("functions/collider_bias.r")
 source("functions/graphs.r")
 

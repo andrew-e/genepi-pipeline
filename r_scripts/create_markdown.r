@@ -10,7 +10,8 @@ parser <- add_argument(parser, "--markdown_file",
 )
 parser <- add_argument(parser, "--params",
                        help = "Params to pass into markdown, a=b,c=d",
-                       type = "character"
+                       type = "character",
+                       nargs = Inf
 )
 output_file <- add_argument(parser, "--output_file",
                             help = "Name of output file",
