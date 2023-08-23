@@ -21,8 +21,12 @@ onstart:
     validate_gwases(g['gwas'] for g in gwases)
     validate_ancestries(g['ancestry'] for g in gwases)
 
+#List of output files
 expected_vs_observed_results = RESULTS_DIR + "expected_vs_observed_outcomes.tsv"
 expected_vs_observed_variants = RESULTS_DIR + "expected_vs_observed_variants.tsv"
+heterogeneity_scores = RESULTS_DIR + "heterogeneity_scores.tsv",
+heterogeneity_plot_per_snp = RESULTS_DIR + "plots/heterogeneity_plot.png",
+heterogeneity_snp_comparison = RESULTS_DIR + "plots/heterogeneity_snp_comparison.png"
 
 clump_dir = DATA_DIR + "clumped_snps/"
 if not os.path.isdir(clump_dir):
@@ -65,7 +69,7 @@ rule find_clumped_snps:
         ancestries=({ancestries})
         clumped_snp_prefixes=({clumped_snp_prefixes})
 
-        for i in "${{!ancestries[@]}}"
+        for i in "${{!gwases[@]}}"
         do
             ancestry=${{ancestries[$i]}}
             plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/$ancestry \
@@ -93,23 +97,31 @@ rule compare_observed_vs_expected_gwas:
             --variants_output {output.variants}
         """
 
-# rule heterogeneity_between_ancestries:
-#     input:
-#         gwas = expand(DATA_DIR + "/gwas_{ancestry}.tsv", ancestry=ANCESTRIES),
-#         clumped_files = expand(DATA_DIR + "/gwas_{ancestry}.tsv", ancestry=ANCESTRIES)
-#     output:
-#         hetergeneity = RESULTS_DIR + "heterogeneity_score.tsv",
-#         heterogeneity_plot_per_snp = RESULTS_DIR + "/plots/hetergeneity_plot.png",
-#         comparsion_heterogeneity_snps = RESULTS_DIR + "/plots/comparsion_heterogeneity_snps.png"
-#     shell:
-#         """
-#         Rscript heterogeneity_between_ancestries.r --gwases {gwases} --clumps {clumped_files} \
-#             --plot_filename {heterogeneity_plot_per_snp} --comparison_plot_filename {comparsion_heterogeneity_snps}
-#         """
+rule heterogeneity_between_ancestries:
+    input:
+        gwases = [g['standardised_gwas'] for g in gwases],
+        clumped_files = [g['clumped_snps'] for g in gwases]
+    output:
+        heterogeneity_scores = heterogeneity_scores,
+        heterogeneity_plot_per_snp = heterogeneity_plot_per_snp,
+        heterogeneity_snp_comparison  = heterogeneity_snp_comparison
+    shell:
+        """
+        Rscript calculate_heterogeneity.r \
+            --gwas_filenames {input.gwases} \
+            --clumped_filenames {input.clumped_files} \
+            --ancestry_list {ancestries} \
+            --hetergeneity_scores_output {output.heterogeneity} \
+            --heterogeneity_plot_output {output.heterogeneity_plot_per_snp} \
+            --heterogeneity_plot_per_snp_output {output.heterogeneity_snp_comparison}
+        """
 
 files_created = [
     expected_vs_observed_results,
-    expected_vs_observed_variants
+    expected_vs_observed_variants,
+    heterogeneity_scores,
+    heterogeneity_plot_per_snp,
+    heterogeneity_snp_comparison
 ]
 
 onsuccess:

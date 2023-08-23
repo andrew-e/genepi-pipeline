@@ -8,7 +8,7 @@ column_map <- list(
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
-standardise_gwas <- function(file_gwas, output_file, input_format="default", populate_rsid=F) {
+standardise_gwas <- function(file_gwas, output_file, input_format="default", populate_rsid=NULL) {
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
   }
@@ -49,7 +49,6 @@ standardise_columns <- function(gwas) {
   gwas$EA <- toupper(gwas$EA)
   gwas$OA <- toupper(gwas$OA)
 
-  gwas$CHR <- as.numeric(gwas$CHR)
   gwas$BP <- as.numeric(gwas$BP)
   gwas$P <- as.numeric(gwas$P)
   gwas$P[gwas$P == 0] <- .Machine$double.xmin
@@ -146,18 +145,25 @@ harmonise_gwases <- function(...) {
   return(gwases)
 }
 
-populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
-  if (populate_rsid == F) return(gwas)
+populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=NULL, reference_build="hg37") {
+  if (is.null(populate_rsid)) return(gwas)
+
+  if (populate_rsid == "full") {
+    marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
+  }
+  else {
+    marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
+  }
 
   if(column_map$default$RSID %in% colnames(gwas)) {
     print("GWAS already has an RSID field, will not overwrite")
     return(gwas)
   }
   print("populating RSID...")
+  gwas$chrbp <- paste0(gwas$CHR, ":", gwas$BP)
 
-  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
-  chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
-  gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
+  chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c(reference_build, "rsid"))
+  gwas$RSID <- chrpos_to_rsid$rsid[match(gwas$chrbp, chrpos_to_rsid[[reference_build]])]
  
   return(gwas)
 }

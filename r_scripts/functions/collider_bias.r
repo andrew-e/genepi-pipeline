@@ -16,18 +16,18 @@ collider_bias_results <- data.frame(
 
 #' correct_for_collider_bias: do a bunch of collider bias corrections.  Including:
 #'  * SlopeHunter
-#'  * cwls Correction
+#'  * "Corrected Weighted Least Squares" (CWLS, or Dudbridge) Correction
 #'  * MR IVW
 #'
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 #' @examples
-correct_for_collider_bias <- function(incidence_gwas,
-                                      subsequent_gwas,
-                                      clumped_snps_file,
-                                      collider_bias_results_file,
-                                      harmonised_effects_result_file,
-                                      slopehunter_adjusted_file,
-                                      p_value_thresholds = c(0.1, 0.01, 0.001, 1e-05)) {
+conduct_collider_bias_analysis <- function(incidence_gwas,
+                                           subsequent_gwas,
+                                           clumped_snps_file,
+                                           collider_bias_results_file,
+                                           harmonised_effects_result_file,
+                                           slopehunter_adjusted_file,
+                                           p_value_thresholds = c(0.1, 0.01, 0.001, 1e-05)) {
   library(dplyr, quietly = TRUE)
   library(SlopeHunter, quietly = TRUE)
   create_dir_for_files(collider_bias_results_file, harmonised_effects_result_file, slopehunter_adjusted_file)
@@ -51,7 +51,9 @@ correct_for_collider_bias <- function(incidence_gwas,
                                                        pos_col = "BP"
   )
 
-  slopehunter_incidence <- slopehunter_incidence[!(is.na(slopehunter_incidence$EA.incidence) | is.na(slopehunter_incidence$OA.incidence)), ]
+  slopehunter_incidence <- slopehunter_incidence[
+    !(is.na(slopehunter_incidence$EA.incidence) | is.na(slopehunter_incidence$OA.incidence)),
+  ]
   slopehunter_progression <- SlopeHunter::read_prognosis(subsequent_gwas,
                                                          snp_col = "SNP",
                                                          effect_allele_col = "EA",
@@ -64,7 +66,9 @@ correct_for_collider_bias <- function(incidence_gwas,
                                                          pos_col = "BP"
   )
 
-  slopehunter_progression <- slopehunter_progression[!(is.na(slopehunter_progression$EA.prognosis) | is.na(slopehunter_progression$OA.prognosis)), ]
+  slopehunter_progression <- slopehunter_progression[
+    !(is.na(slopehunter_progression$EA.prognosis) | is.na(slopehunter_progression$OA.prognosis)),
+  ]
 
   harmonised_effects <- SlopeHunter::harmonise_effects(
     incidence_dat = slopehunter_incidence,
@@ -204,50 +208,53 @@ correct_for_collider_bias <- function(incidence_gwas,
   vroom::vroom_write(collider_bias_results, collider_bias_results_file)
 
   slopehunter_default_result <- subset(collider_bias_results, METHOD == collider_bias_type$slopehunter & P_VALUE_THRESHOLD == 0.001)
-  harmonised_effects <- adjust_gwas_data_from_weights(harmonised_effects, slopehunter_default_result$METHOD, slopehunter_default_result$BETA, slopehunter_default_result$SE)
-  save_subsequent_adjusted(collider_bias_type$slopehunter, subsequent, harmonised_effects, slopehunter_adjusted_file)
+  harmonised_effects <- adjust_gwas_data_from_weights_and_save(subsequent, harmonised_effects,
+                                                               slopehunter_default_result$METHOD,
+                                                               slopehunter_default_result$BETA,
+                                                               slopehunter_default_result$SE,
+                                                               slopehunter_adjusted_file
+  )
 }
 
-#' adjust_gwas_data_from_weights: Apply a slope correction weight (and SE) to an existing GWAS
+#' adjust_gwas_data_from_weights: Apply a slope correction weight (and SE) to an existing GWAS and save result to disk.
 #'   This can be used in conjuction with weights calculated to account for collider bias.
 #'   Currently used to work on a GWAS result of Slopehunter.
 #'
-#' @param gwas: a dataframe that includes BETA.incidence, BETA.prognosis, SE.incidence, SE.prognosis
+#' @param gwas: gwas that the new collider bias correction will be saved to.  Swaps out BETA, SE, and P
+#' @param harmonised_effects: a dataframe that includes BETA.incidence, BETA.prognosis, SE.incidence, SE.prognosis
 #' @param collider_bias_type: string name of adjustment (eg. slopehunter)
-#' @param slope: number, slope of the correction
-#' @param slope_standard_error: number, SE of the corrected slope
-#' @return gwas with 3 additional columns BETA_{name}, SE_{name}, and P_{name}
-adjust_gwas_data_from_weights <- function(gwas, collider_bias_type, slope, slope_standard_error) {
-  adjusted_beta <- paste0("BETA.", collider_bias_type)
-  adjusted_se <- paste0("SE.", collider_bias_type)
-  adjusted_p <- paste0("P.", collider_bias_type)
-
-  gwas[[adjusted_beta]] <- (gwas$BETA.prognosis - (slope * gwas$BETA.incidence))
-
-  gwas[[adjusted_se]] <- sqrt(
-    (gwas$SE.prognosis * gwas$SE.prognosis) +
-      ((slope * slope) * (gwas$SE.incidence * gwas$SE.incidence)) +
-      ((gwas$BETA.incidence * gwas$BETA.incidence) * (slope_standard_error * slope_standard_error)) +
-      ((gwas$SE.incidence * gwas$SE.incidence) * (slope_standard_error * slope_standard_error))
-  )
-
-  gwas[[adjusted_p]] <- pchisq(
-    (gwas[[adjusted_beta]] / gwas[[adjusted_se]])^2, 1,
-    lower.tail = FALSE
-  )
-
-  return(gwas)
-}
-
-save_subsequent_adjusted <- function(collider_bias_type, gwas, harmonised_effects, output_file) {
+#' @param beta: number, slope of the correction
+#' @param se: number, SE of the corrected slope
+#' @param output_file: name of file that the corrected GWAS will be saved to
+#'
+adjust_gwas_data_from_weights_and_save <- function(gwas,
+                                                   harmonised_effects,
+                                                   collider_bias_type,
+                                                   beta,
+                                                   se,
+                                                   output_file) {
   harmonised_effects$SNP <- toupper(harmonised_effects$SNP)
   adjusted_beta <- paste0("BETA.", collider_bias_type)
   adjusted_se <- paste0("SE.", collider_bias_type)
   adjusted_p <- paste0("P.", collider_bias_type)
 
+  harmonised_effects[[adjusted_beta]] <- (harmonised_effects$BETA.prognosis - (beta * harmonised_effects$BETA.incidence))
+
+  harmonised_effects[[adjusted_se]] <- sqrt(
+    (harmonised_effects$SE.prognosis * harmonised_effects$SE.prognosis) +
+      ((beta * beta) * (harmonised_effects$SE.incidence * harmonised_effects$SE.incidence)) +
+      ((harmonised_effects$BETA.incidence * harmonised_effects$BETA.incidence) * (se * se)) +
+      ((harmonised_effects$SE.incidence * harmonised_effects$SE.incidence) * (se * se))
+  )
+
+  harmonised_effects[[adjusted_p]] <- pchisq(
+    (harmonised_effects[[adjusted_beta]] / harmonised_effects[[adjusted_se]])^2, 1,
+    lower.tail = FALSE
+  )
+
   gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
   gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%
     rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
 
-  data.table::fwrite(gwas, output_file, sep = "\t")
+  vroom::vroom_write(gwas, output_file)
 }

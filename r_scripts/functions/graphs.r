@@ -1,29 +1,3 @@
-#TODO: a sort of specific grouped forest plot (maybe comparing ancestries?)
-# forest_plot <- function(sslist, snp)
-# {
-#    tibble(
-#        beta = sapply(sslist, \(x) x$bhat[snp]),
-#        se = sapply(sslist, \(x) x$se[snp]),
-#        label = names(sslist)
-#    ) %>%
-#    ggplot(., aes(x=beta, y=label)) +
-#    geom_point() +
-#    geom_errorbarh(aes(xmin=beta-se*1.96, xmax=beta+se*1.96), height=0) +
-#    geom_vline(xintercept=0, linetype="dotted") +
-#    labs(x="beta", y="population")
-# }
-#
-# alpha = 0.05/nrow(gwas_1$snp)
-#
-# list <- c("first_gwas", "second_gwas", "third_gwas", "fourth_gwas")
-#
-# index <- which(first_gwas$pval < 5e-8)
-# o_first_second <- expected_vs_observed_replication(first_gwas$bhat[index], second_gwas$bhat[index], third_gwas$se[index], fourth_gwas$se[index], 0.05)
-#
-# png("expected_observed_fail_first_second_forest_plot.png", width = 4, height = 4, units = 'in', res = 300)
-# forest_plot(list(eur=first_gwas, afr=second_gwas, eas=third_gwas, sas=fourth_gwas), index[which(o_first_second$variants$sign_fail)[3]])
-# dev.off()
-
 forest_plot <- function(table, title, output_file) {
   library(ggplot2, quietly = T)
   create_dir_for_files(output_file)
@@ -44,9 +18,10 @@ forest_plot <- function(table, title, output_file) {
     geom_pointrange(cex = 1) +
     geom_vline(xintercept = 0) +
     theme(legend.position = "none") +
-    ggtitle(title)
+    ggtitle(title) +
+    theme(plot.title = element_text(hjust = 0.5))
 
-  ggsave(output_file)
+  ggsave(output_file, limitsize = F)
 }
 
 grouped_forest_plot <- function(table, title, group_column, output_file, p_value_column = NA, q_stat_column = NA) {
@@ -56,7 +31,6 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
   }
 
   first_column_name <- colnames(table)[1]
-
   table$BETA <- as.numeric(table$BETA)
   table$SE <- as.numeric(table$SE)
 
@@ -74,17 +48,17 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
     geom_vline(xintercept = 0) +
     geom_pointrange(cex = 1, fatten = 2.5, position=position_dodge(width = 0.5)) +
     theme(legend.position = "bottom") +
-    ggtitle(title)
+    ggtitle(title) +
+    theme(plot.title = element_text(hjust = 0.5))
 
   if (!is.na(p_value_column)) {
-    plot_thing + geom_text(aes(label = paste("P=", pval_adjusted), group = .data[[group_column]]), position = position_dodge(width = 0.5))
+    plot_thing + geom_text(aes(label = paste("P=", signif(.data[[p_value_column]]), digits=3), group = .data[[group_column]]), position = position_dodge(width = 0.5))
   }
   else if (!is.na(q_stat_column)) {
     plot_thing + geom_text(aes(x = 1.5, label = .data[[q_stat_column]]))
   }
 
-
-  ggsave(output_file)
+  ggsave(output_file, width = 2000, units = "px")
 }
 
 #' manhattan_and_qq: produce manhattan and qq plot from a GWAS file
@@ -178,4 +152,20 @@ miami_plot <- function(first_gwas_filename,
   #  text(0.5, 4, paste("# of SNPS Compared =", nrow(second_gwas)))
   #}
   dev.off()
+}
+
+plot_heritability_contribution_per_ancestry <- function(heterogeneity_results_qj, output_file) {
+  library(ggplot2)
+  library(tidyr)
+  graph_width <- max(1000, nrow(heterogeneity_results_qj) * 100)
+  plot <- tidyr::gather(as.data.frame(heterogeneity_results_qj), "key", "value", -SNP)
+
+  ggplot(plot, aes(x=SNP, y=-log10(value))) +
+    geom_point(aes(colour=key)) +
+    scale_colour_brewer(type="qual") +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ggtitle("Contribution to heterogeneity score broken down by population") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+  ggsave(output_file, width = graph_width, units = "px")
 }

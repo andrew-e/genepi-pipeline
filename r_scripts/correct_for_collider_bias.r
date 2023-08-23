@@ -37,11 +37,11 @@ parser <- add_argument(parser, "--p_value_thresholds",
 args <- parse_args(parser)
 p_value_thresholds <- as.numeric(split_string_into_vector(args$p_value_thresholds))
 
-correct_for_collider_bias(args$incidence_gwas,
-                          args$subsequent_gwas,
-                          args$clumped_file,
-                          args$collider_bias_results_output,
-                          args$harmonised_effects_output,
-                          args$collider_bias_slopehunter_output,
-                          p_value_thresholds
+conduct_collider_bias_analysis(args$incidence_gwas,
+                               args$subsequent_gwas,
+                               args$clumped_file,
+                               args$collider_bias_results_output,
+                               args$harmonised_effects_output,
+                               args$collider_bias_slopehunter_output,
+                               p_value_thresholds
 )

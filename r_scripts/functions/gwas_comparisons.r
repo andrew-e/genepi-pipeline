@@ -55,6 +55,7 @@ compare_two_gwases_from_clumped_hits <- function(first_gwas, second_gwas, clumpe
   results$variants$COMPARISON <- comparison_name
   results$variants$SNP <- harmonised_gwases[[1]]$SNP
   results$variants <- dplyr::select(results$variants, COMPARISON, SNP, everything())
+  results$res <- dplyr::select(results$res, COMPARISON, everything())
 
   return(results)
 }
@@ -118,54 +119,93 @@ expected_vs_observed_replication <- function(b_disc, se_disc, b_rep, se_rep, alp
 }
 
 
+compare_heterogeneity_across_ancestries <- function(gwas_filenames,
+                                                    clumped_filenames,
+                                                    ancestry_list,
+                                                    heterogeneity_score_file,
+                                                    heterogeneity_plot_file,
+                                                    heterogeneity_plots_per_snp_file) {
+  library(vroom)
+  create_dir_for_files(heterogeneity_score_file, heterogeneity_plot_file, heterogeneity_plots_per_snp_file)
+
+  comparison_columns <- c("SNP", "BETA", "SE", "RSID")
+  clumped_snps <- data.table::rbindlist(lapply(clumped_filenames, data.table::fread))$SNP
+  clumped_snps <- unique(clumped_snps)
+
+  gwases <- lapply(gwas_filenames, function(gwas_filename) {
+    vroom::vroom(gwas_filename, col_select = comparison_columns) %>%
+      subset(RSID %in% clumped_snps)
+  })
+  for (i in seq_along(gwases)) {
+    gwases[[i]]$ancestry <- ancestry_list[[i]]
+  }
+
+  harmonised_gwases <- rlang::inject(harmonise_gwases(!!!gwases))
+  gwases_by_ancestry <- stats::setNames(harmonised_gwases, ancestry_list)
+
+  heterogeneity_results <- calculate_heterogeneity_scores(gwases_by_ancestry, heterogeneity_score_file)
+  plot_heritability_contribution_per_ancestry(heterogeneity_results$Qj, heterogeneity_plot_file)
+  plot_snps_with_heterogeneity(gwases_by_ancestry, heterogeneity_results$Q, heterogeneity_plots_per_snp_file)
+}
+
+plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resuts_q, heterogeneity_forest_plot_file) {
+  are_heterogeneous <- which(heterogeneity_resuts_q$Qpval < 0.05 / nrow(heterogeneity_resuts_q))
+
+  forest_plot_rows <- data.table::rbindlist(lapply(gwases_by_ancestry, function(gwas) {
+    gwas$Qpval <- heterogeneity_resuts_q$Qpval
+    gwas[are_heterogeneous, ]
+  }))
+
+  grouped_forest_plot(forest_plot_rows,
+                      title = "Plot of SNPs that fail heterogeneity",
+                      group_column = "ancestry",
+                      output_file = heterogeneity_forest_plot_file,
+                      #p_value_column = "Qpval" ??
+  )
+}
 
 #' Test for heterogeneity of effect estimates between populations
 #'
-#' @description For each SNP this function will provide a Cochran's Q test statistic - a measure of heterogeneity of effect sizes between populations. A low p-value means high heterogeneity.
-#' In addition, for every SNP it gives a per population p-value - this can be interpreted as asking for each SNP is a particular giving an outlier estimate.
+#' @description For each SNP this function will provide a Cochran's Q test statistic -
+#'  a measure of heterogeneity of effect sizes between populations. A low p-value means high heterogeneity.
+#'  In addition, for every SNP it gives a per population p-value -
+#'  this can be interpreted as asking for each SNP is a particular giving an outlier estimate.
 #'
-#' @param sslist Named list of data frames, one for each population, with at least bhat, se and snp columns
+#' @param gwases_by_ancestry Named list of data frames, one for each population, with at least bhat, se and snp columns
 #'
 #' @return List
 #' - Q = vector of p-values for Cochrane's Q statistic for each SNP
 #' - Qj = Data frame of per-population outlier q values for each SNP
-heterogeneity_test <- function(sslist) {
-  beta <- lapply(sslist, \(x) x$bhat) %>% bind_cols
-  se <- lapply(sslist, \(x) x$se) %>% bind_cols
+calculate_heterogeneity_scores <- function(gwases_by_ancestry, heterogeneity_score_file) {
+  beta <- lapply(gwases_by_ancestry, \(x) x$BETA) %>% bind_cols
+  se <- lapply(gwases_by_ancestry, \(x) x$SE) %>% bind_cols
   o <- lapply(seq_len(nrow(beta)), \(i) {
     fixed_effects_meta_analysis(as.numeric(beta[i,]), as.numeric(se[i,]))
   })
 
-  Q <- tibble::tibble(snp = sslist[[1]]$snp, Qpval = sapply(o, \(x) x$Qpval))
+  Q <- tibble::tibble(SNP = gwases_by_ancestry[[1]]$SNP,
+                      Qpval = sapply(o, \(x) x$Qpval)
+  )
+
   Qj <- lapply(o, \(x) x$Qjpval) %>% do.call(rbind, .) %>%
     tibble::as_tibble() %>%
-    dplyr::rename(setNames(paste0("V", seq_along(sslist)), names(sslist))) %>%
-    dplyr::mutate(snp = sslist[[1]]$snp)
+    dplyr::rename(setNames(paste0("V", seq_along(gwases_by_ancestry)), names(gwases_by_ancestry))) %>%
+    dplyr::mutate(SNP = gwases_by_ancestry[[1]]$SNP)
 
+  vroom::vroom_write(Q, heterogeneity_score_file)
   return(list(Q=Q, Qj=Qj))
 }
 
-fixed_effects_meta_analysis <- function(beta_vec, se_vec) {
-  w <- 1 / se_vec^2
-  beta <- sum(beta_vec * w) / sum(w)
+fixed_effects_meta_analysis <- function(betas, standard_errors) {
+  w <- 1 / standard_errors^2
+  beta <- sum(betas * w) / sum(w)
   se <- sqrt(1 / sum(w))
-  pval <- pnorm(abs(beta / se), lower.tail = FALSE)
-  Qj <- w * (beta-beta_vec)^2
+
+  Qj <- w * (beta-betas)^2
   Q <- sum(Qj)
-  Qdf <- length(beta_vec)-1
+  Qdf <- length(betas)-1
   Qjpval <- pchisq(Qj, 1, lower.tail=FALSE)
   Qpval <- pchisq(Q, Qdf, lower.tail=FALSE)
+
   return(list(beta=beta, se=se, Qpval=Qpval, Qj=Qj, Qjpval=Qjpval))
-}
-
-
-#TODO: put this in graphs:
-
-make_snp_geom_point <- function() {
-  library(ggplot2)
-  library(tidyr)
-  tidyr::gather(as.data.frame(o$Qj), "key", "value", -snp) %>%
-  ggplot(., aes(x=snp, y=-log10(value))) +
-    geom_point(aes(colour=key)) +
-    scale_colour_brewer(type="qual")
 }
