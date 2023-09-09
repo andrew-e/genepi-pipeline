@@ -1,3 +1,6 @@
+include: "../snakemake/common.smk"
+singularity: docker_container
+
 #FILL IN VARIABLES BELOW
 ##############################################
 ancestry = "EUR"
@@ -6,8 +9,6 @@ subsequent_gwas = f"/user/work/{user}/test_data/subsequent.tsv"
 plink_clumping_arguments = "--clump-p2 0.001 --clump-r2 0.3"
 ##############################################
 
-include: "../snakemake/common.smk"
-singularity: docker_container
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")

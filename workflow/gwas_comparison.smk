@@ -1,31 +1,33 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-#Basically, turn this lab book into a pipeline:
-#https://explodecomputer.github.io/lab-book/posts/2023-06-07-cross-group-effect-comparison/
-
+########################################
 gwases = [
     {
-        "gwas": f"/user/work/{user}/test_data/test_data.tsv.gz",
+        "gwas": "/user/work/wt23152/test_data/first_ais_eur_mvp.tsv.gz",
         "ancestry": "EUR"
     },
     {
-        "gwas": f"/user/work/{user}/test_data/test_data_no_rsid.tsv.gz",
-        "ancestry": "EUR"
+        "gwas": "/user/work/wt23152/test_data/first_ais_his_mvp.tsv.gz",
+        "ancestry": "AMR"
+    },
+    {
+        "gwas": "/user/work/wt23152/test_data/first_ais_afr_mvp.tsv.gz",
+        "ancestry": "AFR"
     }
 ]
 ########################################
 
 onstart:
     print("##### GWAS Comparison Pipeline #####")
-    validate_gwases(g['gwas'] for g in gwases)
-    validate_ancestries(g['ancestry'] for g in gwases)
+    validate_gwases([g['gwas'] for g in gwases])
+    validate_ancestries([g['ancestry'] for g in gwases])
 
 #List of output files
 expected_vs_observed_results = RESULTS_DIR + "expected_vs_observed_outcomes.tsv"
 expected_vs_observed_variants = RESULTS_DIR + "expected_vs_observed_variants.tsv"
 heterogeneity_scores = RESULTS_DIR + "heterogeneity_scores.tsv",
-heterogeneity_plot_per_snp = RESULTS_DIR + "plots/heterogeneity_plot.png",
+heterogeneity_plot = RESULTS_DIR + "plots/heterogeneity_plot.png",
 heterogeneity_snp_comparison = RESULTS_DIR + "plots/heterogeneity_snp_comparison.png"
 
 clump_dir = DATA_DIR + "clumped_snps/"
@@ -37,16 +39,16 @@ for g in gwases:
     g["clumped_snp_prefix"] = clump_dir + file_prefix(g["gwas"])
     g["clumped_snps"] = g["clumped_snp_prefix"] + ".clumped"
 
-ancestries = [g['ancestry'] for g in gwases]
-clumped_snp_prefixes = [g['clumped_snp_prefix'] for g in gwases]
+ancestries = list([g['ancestry'] for g in gwases])
+clumped_snp_prefixes = list([g['clumped_snp_prefix'] for g in gwases])
 
 rule all:
-    input: expected_vs_observed_results, expected_vs_observed_variants
+    input: expected_vs_observed_results, expected_vs_observed_variants, heterogeneity_scores, heterogeneity_plot, heterogeneity_snp_comparison
 
 rule standardise_gwases:
     threads: 4
     resources:
-        mem = "16G"
+        mem = f"{len(gwases)*5}G"
     input: [g['gwas'] for g in gwases]
     output: [g['standardised_gwas'] for g in gwases]
     shell:
@@ -74,7 +76,7 @@ rule find_clumped_snps:
             ancestry=${{ancestries[$i]}}
             plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/$ancestry \
                 --clump ${{gwases[$i]}} \
-                --clump-p1 0.00000005 \
+                --clump-p1 0.0000005 \
                 --clump-snp-field RSID \
                 --out ${{clumped_snp_prefixes[$i]}}
         done
@@ -82,6 +84,8 @@ rule find_clumped_snps:
 
 
 rule compare_observed_vs_expected_gwas:
+    resources:
+        mem = f"{len(gwases)*10}G"
     input:
         gwases = [g['standardised_gwas'] for g in gwases],
         clumped_files = [g['clumped_snps'] for g in gwases]
@@ -98,12 +102,14 @@ rule compare_observed_vs_expected_gwas:
         """
 
 rule heterogeneity_between_ancestries:
+    resources:
+        mem = f"{len(gwases)*10}G"
     input:
         gwases = [g['standardised_gwas'] for g in gwases],
         clumped_files = [g['clumped_snps'] for g in gwases]
     output:
         heterogeneity_scores = heterogeneity_scores,
-        heterogeneity_plot_per_snp = heterogeneity_plot_per_snp,
+        heterogeneity_plot = heterogeneity_plot,
         heterogeneity_snp_comparison  = heterogeneity_snp_comparison
     shell:
         """
@@ -111,8 +117,8 @@ rule heterogeneity_between_ancestries:
             --gwas_filenames {input.gwases} \
             --clumped_filenames {input.clumped_files} \
             --ancestry_list {ancestries} \
-            --hetergeneity_scores_output {output.heterogeneity} \
-            --heterogeneity_plot_output {output.heterogeneity_plot_per_snp} \
+            --heterogeneity_scores_output {output.heterogeneity_scores} \
+            --heterogeneity_plot_output {output.heterogeneity_plot} \
             --heterogeneity_plot_per_snp_output {output.heterogeneity_snp_comparison}
         """
 
@@ -120,7 +126,7 @@ files_created = [
     expected_vs_observed_results,
     expected_vs_observed_variants,
     heterogeneity_scores,
-    heterogeneity_plot_per_snp,
+    heterogeneity_plot,
     heterogeneity_snp_comparison
 ]
 

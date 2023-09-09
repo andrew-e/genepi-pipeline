@@ -17,6 +17,8 @@ def validate_ancestries(ancestries):
     allowed_ancestries = ["EUR", "EAS", "AFR", "AMR", "SAS"]
     if not all(ancestry in allowed_ancestries for ancestry in ancestries):
         raise ValueError(f"Please ensure all ancestires are one of these values:\n {allowed_ancestries}")
+    if len(ancestries) != len(set(ancestries)):
+        raise ValueError(f"Error: All GWAS must have a different ancestry")
 
 
 def cleanup_old_slurm_logs():
