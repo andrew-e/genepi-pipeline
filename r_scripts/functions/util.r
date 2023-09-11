@@ -1,11 +1,13 @@
-dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
-
 split_string_into_vector <- function(input_string) {
-  return(unlist(strsplit(input_string, ', ')))
+  return(unlist(strsplit(input_string, '[, ]')))
 }
 
-split_string_into_list <- function(input_string) {
-  return(unlist(strsplit(input_string, '=,')))
+split_string_into_named_list <- function(input_string) {
+  split <- unlist(strsplit(input_string, '[=, ]'))
+  names <- split[c(T, F)]
+  values <- split[c(F, T)]
+
+  return(structure(as.list(values), names=names))
 }
 
 #' vroom_chr: faster way of opening a GWAS, only load a specific chromosome's worth of data
@@ -13,8 +15,9 @@ split_string_into_list <- function(input_string) {
 #' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
 vroom_chr <- function(gwas_file, chr, col_select=NULL) {
   pipe_command <- paste0("head -n1 ", gwas_file, " && rg -Iz '\t", chr, "\t' ", gwas_file)
+  pipe_command <- paste0("rg -Iz '\t", chr, "\t' ", gwas_file)
 
-  gwas <- vroom::vroom(pipe(pipe_command, col_select = col_select))
+  gwas <- vroom::vroom(pipe(pipe_command), col_select = col_select)
   return(gwas)
 }
 
@@ -43,16 +46,37 @@ map_rsid_list_to_snps <- function(gwas, rsids=c()) {
   return(gwas$SNP)
 }
 
-create_rmd_file <- function(rmd_file, params = list(), output_file) {
+create_html_from_rmd <- function(rmd_file, params = list(), output_file) {
   library(rmarkdown, quietly = T)
-  rmarkdown::render(paste0("markdown/", rmd_file),
-                    "pdf_document",
+  rmarkdown::render(rmd_file,
                     output_file = output_file,
                     params = params)
 }
 
+get_other_docker_tag <- function() {
+  tag_to_match <- "test"
+  docker_url <- "https://hub.docker.com/v2/repositories/andrewrrelmore/genepi_pipeline/tags/"
+
+  response <- httr::GET(docker_url, httr::accept_json())
+  tag_information <- httr::content(response, type="application/json")$results
+
+  #we can't be sure about tag order, so iterating over it twice
+  for (tag in tag_information) {
+    if (tag$name == tag_to_match) {
+      digest <- tag$digest
+    }
+  }
+  for (tag in tag_information) {
+    if (tag$digest == digest & tag$name != tag_to_match) {
+      return(tag$name)
+    }
+  }
+  return(tag_to_match)
+}
+
 #TODO: unused, buy maybe helpful in the future
 rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
+  dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
   gwas <- data.table::fread(gwas_filename)
   gwas[[column]] <- gsub('^rs', '', gwas[[column]])
 

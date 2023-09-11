@@ -47,10 +47,15 @@ if (length(gwas_filenames) != length(clumped_filenames) && length(gwas_filenames
   stop("Error: size of --gwas_filenames, --clumped_filenames, and --ancestry_list must be equal.")
 }
 
+create_dir_for_files(args$heterogeneity_scores_output,
+                                        args$heterogeneity_plot_output,
+                                        args$heterogeneity_plot_per_snp_output
+)
+
 compare_heterogeneity_across_ancestries(gwas_filenames,
                                         clumped_filenames,
                                         ancestry_list,
                                         args$heterogeneity_scores_output,
                                         args$heterogeneity_plot_output,
-                                        args$heterogeneity_plots_per_snp_output
+                                        args$heterogeneity_plot_per_snp_output
 )

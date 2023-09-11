@@ -17,5 +17,6 @@ RUN pip install -r docker/requirements.txt
 COPY r_scripts /home/r_scripts
 #RUN wget http://csg.sph.umich.edu/abecasis/metal/download/Linux-metal.tar.gz
 #RUN install bcftools too?
+#RUN wget http://christianbenner.com/finemap_v1.4.2_x86_64.tgz && tar -xf finemap_v1.4.2_x86_64.tgz && mv finemap_v1.4.2_x86_64 /usr/local/bin/finemap
 
 CMD ["/bin/bash"]

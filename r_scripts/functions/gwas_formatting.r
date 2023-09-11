@@ -3,21 +3,21 @@ library(tidyr, quietly=T)
 library(dplyr, quietly=T)
 
 column_map <- list(
-  default = list(SNP="SNP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
-standardise_gwas <- function(file_gwas, output_file, input_format="default", populate_rsid=NULL) {
+standardise_gwas <- function(file_gwas, output_file, input_format="default", populate_rsid=F, bespoke_column_map=NULL) {
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
   }
-  create_dir_for_files(output_file)
-  
+
   #TODO: if we need to add bespoke input format wrangling here, we can
-  
+  gwas_columns <- if(!is.null(bespoke_column_map)) bespoke_column_map else column_map[[input_format]]
+
   gwas <- vroom::vroom(file_gwas) %>%
-    change_column_names(column_map[[input_format]]) %>%
+    change_column_names(gwas_columns) %>%
     standardise_alleles() %>%
     standardise_columns() %>%
     health_check() %>%
@@ -73,7 +73,8 @@ convert_or_to_beta <- function(gwas) {
 }
 
 health_check <- function(gwas) {
-  if (nrow(gwas[gwas$P < 0 | gwas$P > 1, ]) > 0) {
+  print(head(gwas))
+  if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
     stop("GWAS has some P values outside accepted range")
   }
   if (nrow(gwas[gwas$EAF < 0 | gwas$EAF > 1, ]) > 0) {
@@ -145,26 +146,26 @@ harmonise_gwases <- function(...) {
   return(gwases)
 }
 
-populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=NULL, reference_build="hg37") {
-  if (is.null(populate_rsid)) return(gwas)
+populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F, reference_build="hg37") {
+  if (populate_rsid == F) return(gwas)
 
-  if (populate_rsid == "full") {
-    marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
-  }
-  else {
-    marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
-  }
+  #if (populate_rsid == "full") {
+  #  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
+  #}
+  #else {
+  #  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
+  #}
 
   if(column_map$default$RSID %in% colnames(gwas)) {
     print("GWAS already has an RSID field, will not overwrite")
     return(gwas)
   }
   print("populating RSID...")
-  gwas$chrbp <- paste0(gwas$CHR, ":", gwas$BP)
+  #gwas$chrbp <- paste0(gwas$CHR, ":", gwas$BP)
+  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
+  chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
+  gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
 
-  chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c(reference_build, "rsid"))
-  gwas$RSID <- chrpos_to_rsid$rsid[match(gwas$chrbp, chrpos_to_rsid[[reference_build]])]
- 
   return(gwas)
 }
 

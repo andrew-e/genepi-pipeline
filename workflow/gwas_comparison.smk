@@ -24,11 +24,11 @@ onstart:
     validate_ancestries([g['ancestry'] for g in gwases])
 
 #List of output files
-expected_vs_observed_results = RESULTS_DIR + "expected_vs_observed_outcomes.tsv"
-expected_vs_observed_variants = RESULTS_DIR + "expected_vs_observed_variants.tsv"
-heterogeneity_scores = RESULTS_DIR + "heterogeneity_scores.tsv",
-heterogeneity_plot = RESULTS_DIR + "plots/heterogeneity_plot.png",
-heterogeneity_snp_comparison = RESULTS_DIR + "plots/heterogeneity_snp_comparison.png"
+expected_vs_observed_results = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_outcomes.tsv"
+expected_vs_observed_variants = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_variants.tsv"
+heterogeneity_scores = RESULTS_DIR + "ancestry_comparison/heterogeneity_scores.tsv",
+heterogeneity_plot = RESULTS_DIR + "plots/ancestry_heterogeneity_plot.png",
+heterogeneity_snp_comparison = RESULTS_DIR + "plots/ancestry_heterogeneity_snp_comparison.png"
 
 clump_dir = DATA_DIR + "clumped_snps/"
 if not os.path.isdir(clump_dir):
@@ -122,16 +122,32 @@ rule heterogeneity_between_ancestries:
             --heterogeneity_plot_per_snp_output {output.heterogeneity_snp_comparison}
         """
 
-files_created = [
-    expected_vs_observed_results,
-    expected_vs_observed_variants,
-    heterogeneity_scores,
-    heterogeneity_plot,
-    heterogeneity_snp_comparison
-]
+files_created = {
+    "results": expected_vs_observed_results,
+    "variants": expected_vs_observed_variants,
+    "heterogeneity_scores": heterogeneity_scores,
+    "heterogeneity_plot": heterogeneity_plot,
+    "heterogeneity_snp_comparison": heterogeneity_snp_comparison
+}
+results_file = RESULTS_DIR + "ancestry_comparison/result_summary.html"
+results_string = turn_results_dict_into_rmd_input(files_created)
+
+rule create_results_file:
+    threads: 4
+    resources:
+        mem = "8G",
+    input: files_created.values()
+    output: results_file
+    shell:
+        """
+        Rscript create_results_file.r \
+            --rmd_file markdown/ancestry_comparison.rmd \
+            --params {results_string} \
+            --output_file {output}
+        """
 
 onsuccess:
-    onsuccess(files_created)
+    onsuccess(list(files_created), results_file)
 
 onerror:
     onerror_message()

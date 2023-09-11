@@ -1,5 +1,54 @@
-Hi
+---
+title: "Collider Bias Results"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+---
+```{r include = F}
+library(vroom)
+library(dplyr, quietly=T)
+```
 
+### Manhattan Plots of GWAS
 
-![](params$miami_plot)
-![](images.png?display=inline-block)
+`r sprintf("![Miami Plot Comparing Unadjusted GWAS at p = 0.0001](%s)", params$unadjuested_miami_plot)`
+`r sprintf("![Miami Plot of SlopeHunter Adjusted GWAS at p = 0.0001](%s)", params$slopehunter_adjuested_miami_plot)`
+
+### Comparison of Collider Bias Results
+```{r echo=F}
+collider_bias_results <- vroom::vroom(params$collider_bias_results, show_col_types = F)
+knitr::kable(collider_bias_results)
+```
+
+```{r echo=F}
+clumped_snps <- data.table::fread(params$clumped_snps)$SNP
+incidence <- vroom::vroom(params$incidence_gwas) %>%
+  subset(RSID %in% clumped_snps)
+subsequent <- vroom::vroom(params$subsequent_gwas) %>%
+  subset(RSID %in% clumped_snps)
+subsequent_adjusted <- vroom::vroom(params$slopehunter_adjusted_subsequent) %>%
+  subset(RSID %in% clumped_snps)
+
+all_clumped <- rbind(incidence, subsequent, subsequent_adjusted) %>%
+  subset(SNP, RSID, BE, SE, P) %>%
+  arrange(SNP)
+
+knitr::kable(all_clumped)
+```
+### Alternative collider bias corrections
+
+If you want to correct the original subsequent gwas (`r params$subsequent_gwas`) using different BETA and SE as calculated in collider bias results section above, please run this command inside a `sbatch` script
+
+singularity run -B /user/work/$(whoami) -B /user/home/$(whoami) --pwd /home/r_scripts/ \
+    docker://andrewrrelmore/genepi_pipeline:`r get_other_docker_tag()`\
+    adjust_gwas_for_collider_bias.r --gwas `r params$subsequent_gwas` \
+        --harmonised_effects_gwas `r params$harmonised_gwas` \
+        --beta <BETA> \
+        --se <SE> \
+        --output_gwas <OUTPUT_FILE_NAME>
+
+### Additional info
+
+* This pipeline was run using the github repository: https://github.com/andrew-e/genepi-pipeline
+* and the docker image: docker://andrewrrelmore/genepi_pipeline:`r get_other_docker_tag()`

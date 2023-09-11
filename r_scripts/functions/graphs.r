@@ -1,6 +1,5 @@
 forest_plot <- function(table, title, output_file) {
   library(ggplot2, quietly = T)
-  create_dir_for_files(output_file)
 
   if (!all(c("BETA", "SE") %in% names(table))) {
     stop("data frame needs to have BETA and SE columns")
@@ -45,8 +44,9 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
              color=.data[[group_column]],
              fill=.data[[group_column]])) +
     ylab(first_column_name) +
+    scale_colour_brewer(type="qual") +
     geom_vline(xintercept = 0) +
-    geom_pointrange(cex = 1, fatten = 2.5, position=position_dodge(width = 0.5)) +
+    geom_pointrange(cex = 1, fatten = 2, position=position_dodge(width = 0.5)) +
     theme(legend.position = "bottom") +
     ggtitle(title) +
     theme(plot.title = element_text(hjust = 0.5))
@@ -70,7 +70,6 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
 manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq = T) {
   library(qqman, quietly = T)
   library(vroom, quietly = T)
-  create_dir_for_files(manhattan_filename, qq_filename)
 
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
   gwas <- vroom::vroom(gwas_filename, col_select = manhattan_columns)
@@ -107,7 +106,6 @@ miami_plot <- function(first_gwas_filename,
                        range = NA) {
   library(qqman, quietly=T)
   library(vroom, quietly=T)
-  create_dir_for_files(miami_plot_file)
 
   show_specific_region <- !is.na(chr) & !is.na(bp) & !is.na(range)
 
@@ -129,10 +127,12 @@ miami_plot <- function(first_gwas_filename,
     x_range <- c(bp - range, bp + range)
     x_lab <- paste("Chromosome", chr)
 
-    first_gwas <- subset(first_gwas, CHR == chr)
+    first_gwas <- gwas_region(first_gwas, chr, bp, range)
     second_gwas <- gwas_region(second_gwas, chr, bp, range)
     top_ylim <-  max(-log10(second_gwas$P))
   }
+  print(nrow(first_gwas))
+  print(nrow(second_gwas))
 
   png(miami_plot_file, width = png_width, height = png_height)
   par(mfrow = c(2, 1))
@@ -146,11 +146,13 @@ miami_plot <- function(first_gwas_filename,
   }
 
   par(mar = c(5, 5, 3, 3))
-  qqman::manhattan(second_gwas, ylim = c(top_ylim, 0), xlab = x_lab, xaxt = "n")
+  if (show_specific_region) {
+    qqman::manhattan(second_gwas, ylim = c(top_ylim, 0), xlim = x_range, xlab = x_lab, xaxt = "n")
+  }
+  else {
+    qqman::manhattan(second_gwas, ylim = c(top_ylim, 0), xlab = x_lab, xaxt = "n")
+  }
 
-  #if (show_specific_region) {
-  #  text(0.5, 4, paste("# of SNPS Compared =", nrow(second_gwas)))
-  #}
   dev.off()
 }
 

@@ -3,6 +3,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 user = os.getenv('USER')
@@ -20,6 +21,12 @@ def validate_ancestries(ancestries):
     if len(ancestries) != len(set(ancestries)):
         raise ValueError(f"Error: All GWAS must have a different ancestry")
 
+
+def standardised_gwas_name(gwas_name):
+    if gwas_name.endswith("_standardised.tsv.gz"):
+        return gwas_name
+    else:
+        return DATA_DIR + "gwas/" + file_prefix(gwas_name) + "_standardised.tsv.gz"
 
 def cleanup_old_slurm_logs():
     if not os.path.isdir(slurm_log_directory): return
@@ -49,6 +56,10 @@ def format_dir_string(directory):
     return directory + "/" if not directory.endswith('/') else directory
 
 
+def turn_results_dict_into_rmd_input(results_dict):
+    ' '.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
+
+
 def copy_data_to_rdfs(files_created):
     if RDFS_DIR is not None:
         for file_created in files_created:
@@ -63,9 +74,13 @@ def copy_data_to_rdfs(files_created):
         print(f"Files successfully copied to {RDFS_DIR}")
 
 
-def onsuccess(files_created):
+def onsuccess(files_created, results_file=None):
    print("\nWorkflow finished, no errors.  List of created files:")
    print(*files_created, sep='\n')
+
+   if results_file:
+       print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS: ", results_file)
+
    copy_data_to_rdfs(files_created)
 
 

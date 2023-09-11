@@ -30,7 +30,6 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
                                            p_value_thresholds = c(0.1, 0.01, 0.001, 1e-05)) {
   library(dplyr, quietly = TRUE)
   library(SlopeHunter, quietly = TRUE)
-  create_dir_for_files(collider_bias_results_file, harmonised_effects_result_file, slopehunter_adjusted_file)
 
   clumped_snps <- data.table::fread(clumped_snps_file)
   incidence <- data.table::fread(incidence_gwas)
@@ -208,7 +207,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   vroom::vroom_write(collider_bias_results, collider_bias_results_file)
 
   slopehunter_default_result <- subset(collider_bias_results, METHOD == collider_bias_type$slopehunter & P_VALUE_THRESHOLD == 0.001)
-  harmonised_effects <- adjust_gwas_data_from_weights_and_save(subsequent, harmonised_effects,
+  harmonised_effects <- adjust_gwas_data_from_weights_and_save(subsequent,harmonised_effects,
                                                                slopehunter_default_result$METHOD,
                                                                slopehunter_default_result$BETA,
                                                                slopehunter_default_result$SE,

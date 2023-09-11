@@ -35,4 +35,5 @@ if (length(gwas_filenames) != length(clumped_filenames)) {
   stop("List size of --gwas_filenames and --clumped_filenames are different.  They must be the same.")
 }
 
+create_dir_for_files(args$result_output, args$variants_output)
 compare_replication_across_all_gwas_permutations(gwas_filenames, clumped_filenames, args$result_output, args$variants_output)

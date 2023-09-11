@@ -11,7 +11,8 @@ devtools::install_github(c("Osmahmoud/SlopeHunter",
                            "phenoscanner/phenoscanner",
                            "MRCIEU/ieugwasr",
                            "MRCIEU/TwoSampleMR",
-                           "suchestoncampbelllab/gwasurvivr")
+                           "suchestoncampbelllab/gwasurvivr",
+                           "yixuan/prettydoc")
 )
 
 BiocManager::install("GENESIS")

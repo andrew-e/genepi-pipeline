@@ -11,4 +11,5 @@ parser <- add_argument(parser, "--include_qq", help = "include qq plot", default
 
 args <- parse_args(parser)
 
+create_dir_for_files(args$manhattan_filename, args$qq_filename)
 manhattan_and_qq(args$gwas_filename, args$manhattan_filename, args$qq_filename, args$include_qq)

@@ -26,9 +26,9 @@ parser <- add_argument(parser, "--output_gwas",
 
 args <- parse_args(parser)
 
-type <- "bespoke_adjustment"
-adjust_gwas_data_from_weights_and_save(args$harmonised_effects_gwas,
-                                       type,
+adjust_gwas_data_from_weights_and_save(args$gwas,
+                                       args$harmonised_effects_gwas,
+                                       "bespoke_adjustment",
                                        args$beta,
                                        args$se,
                                        args$output_gwas

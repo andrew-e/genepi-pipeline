@@ -10,7 +10,6 @@ compare_replication_across_all_gwas_permutations <- function(gwas_filenames,
                                                              clumped_filenames,
                                                              result_output_file,
                                                              variants_output_file) {
-  create_dir_for_files(result_output_file, variants_output_file)
   expected_vs_observed_results <- list()
   expected_vs_observed_variants <- list()
 
@@ -126,7 +125,6 @@ compare_heterogeneity_across_ancestries <- function(gwas_filenames,
                                                     heterogeneity_plot_file,
                                                     heterogeneity_plots_per_snp_file) {
   library(vroom)
-  create_dir_for_files(heterogeneity_score_file, heterogeneity_plot_file, heterogeneity_plots_per_snp_file)
 
   comparison_columns <- c("SNP", "BETA", "SE", "RSID")
   clumped_snps <- data.table::rbindlist(lapply(clumped_filenames, data.table::fread))$SNP

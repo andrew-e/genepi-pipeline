@@ -37,11 +37,13 @@ if (length(input_gwases) != length(output_gwases)) {
 
 if (!args$to_output) {
   for (i in seq_along(input_gwases)) {
+    create_dir_for_files(output_gwases[i])
     standardise_gwas(input_gwases[i], output_gwases[i], args$input_format, args$populate_rsid)
     gc()
   }
 } else {
   for (i in seq_along(input_gwases)) {
+    create_dir_for_files(output_gwases[i])
     format_gwas_output(input_gwases[i], output_gwases[i], args$input_format)
     gc()
   }
