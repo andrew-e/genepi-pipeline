@@ -8,7 +8,12 @@ column_map <- list(
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
-standardise_gwas <- function(file_gwas, output_file, input_format="default", populate_rsid=F, bespoke_column_map=NULL) {
+standardise_gwas <- function(file_gwas,
+                             output_file,
+                             genome_data_dir="/user/work/wt23152/genome_data/1000genomes/",
+                             input_format="default",
+                             populate_rsid=F,
+                             bespoke_column_map=NULL) {
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
   }
@@ -21,7 +26,7 @@ standardise_gwas <- function(file_gwas, output_file, input_format="default", pop
     standardise_alleles() %>%
     standardise_columns() %>%
     health_check() %>%
-    populate_rsid_from_1000_genomes(populate_rsid)
+    populate_rsid_from_1000_genomes(genome_data_dir, populate_rsid)
 
   vroom::vroom_write(gwas, output_file)
 }
@@ -146,7 +151,7 @@ harmonise_gwases <- function(...) {
   return(gwases)
 }
 
-populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F, reference_build="hg37") {
+populate_rsid_from_1000_genomes <- function(gwas, genome_data_dir, populate_rsid=F) {
   if (populate_rsid == F) return(gwas)
 
   #if (populate_rsid == "full") {
@@ -162,7 +167,7 @@ populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F, reference_bui
   }
   print("populating RSID...")
   #gwas$chrbp <- paste0(gwas$CHR, ":", gwas$BP)
-  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
+  marker_to_rsid_file <- paste0(genome_data_dir, "marker_to_rsid.tsv.gz")
   chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
   gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
 

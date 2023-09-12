@@ -29,6 +29,8 @@ knitr::kable(expected_vs_observed)
 heterogeneity_results <- vroom::vroom(params$heterogeneity_scores, show_col_types = F)
 knitr::kable(heterogeneity_results)
 ```
+### References
+* Expected vs Observed doi: 10.1038/nature17671
 
 ### Additional info
 

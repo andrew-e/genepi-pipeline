@@ -8,6 +8,11 @@ parser <- add_argument(parser, "--input_gwas",
                        type = "character",
                        nargs = Inf
 )
+parser <- add_argument(parser, "--genome_data_dir",
+                       help = "Directory where genome data lives (for RSID)",
+                       type = "character",
+                       default = "/user/work/wt23152/genome_data/1000genomes/"
+)
 parser <- add_argument(parser, "--input_format",
                        help = "Input format of the gwas (ie. METAL, BOLT, plink)",
                        type = "character",
@@ -38,7 +43,7 @@ if (length(input_gwases) != length(output_gwases)) {
 if (!args$to_output) {
   for (i in seq_along(input_gwases)) {
     create_dir_for_files(output_gwases[i])
-    standardise_gwas(input_gwases[i], output_gwases[i], args$input_format, args$populate_rsid)
+    standardise_gwas(input_gwases[i], output_gwases[i], args$genome_data_dir, args$input_format, args$populate_rsid)
     gc()
   }
 } else {

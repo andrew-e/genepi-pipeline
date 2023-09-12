@@ -155,7 +155,7 @@ plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resut
   }))
 
   grouped_forest_plot(forest_plot_rows,
-                      title = "Plot of SNPs that fail heterogeneity",
+                      title = "SNPs that Have Heterogeneity After Correcting for Multiple Testing",
                       group_column = "ancestry",
                       output_file = heterogeneity_forest_plot_file,
                       #p_value_column = "Qpval" ??

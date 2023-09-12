@@ -12,12 +12,12 @@ parser <- add_argument(parser, "--params",
                        type = "character",
                        nargs = Inf
 )
-output_file <- add_argument(parser, "--output_file",
+parser <- add_argument(parser, "--output_file",
                             help = "Name of output file",
                             type = "character"
 )
 
 args <- parse_args(parser)
 
-rmd_params <- split_string_into_named_list(parser$params)
-create_html_from_rmd(args$rmd_file, args$output_file, rmd_params)
+rmd_params <- split_string_into_named_list(args$params)
+create_html_from_rmd(args$rmd_file, rmd_params, args$output_file)

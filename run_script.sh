@@ -2,13 +2,13 @@
 
 #SBATCH --account=<smed>
 #SBATCH --partition=mrcieu
-#SBATCH --job-name=pipeline_job
+#SBATCH --job-name=bespoke_pipeline_job
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --time=01:00:00
-#SBATCH --mem=2G
-#SBATCH --output=/user/work/%u/slurm_logs/genepi_pipeline_job.out
+#SBATCH --time=02:00:00
+#SBATCH --mem=16G
+#SBATCH --output=/user/work/%u/slurm_logs/bespoke_pipeline_job_%j.out
 
 module add apps/singularity/3.8.3
 USER=$(whoami)

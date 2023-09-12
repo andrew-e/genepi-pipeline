@@ -7,6 +7,7 @@ ancestry = "EUR"
 incidence_gwas = f"/user/work/{user}/test_data/test_data_no_rsid.tsv.gz"
 subsequent_gwas = f"/user/work/{user}/test_data/subsequent.tsv"
 plink_clumping_arguments = "--clump-p2 0.001 --clump-r2 0.3"
+genome_data_dir = "/user/work/wt23152/genome_data/1000genomes/"
 ##############################################
 
 
@@ -44,7 +45,7 @@ results_file = RESULTS_DIR + "collider_bias/result_" + file_prefix(incidence_gwa
 results_string = turn_results_dict_into_rmd_input(files_created)
 
 rule all:
-    input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot
+    input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, results_file
 
 rule standardise_gwases:
     threads: 4
@@ -59,6 +60,7 @@ rule standardise_gwases:
     shell:
         """
         Rscript standardise_gwas.r \
+            --genome_data_dir {genome_data_dir} \
             --input_gwas {input.incidence},{input.subsequent} \
             --output_gwas {output.incidence},{output.subsequent} \
             --populate_rsid
@@ -73,7 +75,7 @@ rule clump_incidence_gwas:
         clumped_incidence
     shell:
         """
-        plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/{ancestry} \
+        plink1.9 --bfile {genome_data_dir}{ancestry} \
             --clump {input.gwas} \
             --clump-snp-field RSID \
             {plink_clumping_arguments} \
@@ -143,7 +145,7 @@ rule create_results_file:
     threads: 4
     resources:
         mem = "8G",
-    input: files_created.values()
+    input: list(files_created.values())
     output: results_file
     shell:
         """
@@ -154,7 +156,7 @@ rule create_results_file:
         """
 
 onsuccess:
-    onsuccess(list(files_created), results_file)
+    onsuccess(list(files_created.values()), results_file)
 
 onerror:
     onerror_message()

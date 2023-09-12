@@ -57,7 +57,7 @@ def format_dir_string(directory):
 
 
 def turn_results_dict_into_rmd_input(results_dict):
-    ' '.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
+    return ' '.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
 
 
 def copy_data_to_rdfs(files_created):
@@ -75,13 +75,14 @@ def copy_data_to_rdfs(files_created):
 
 
 def onsuccess(files_created, results_file=None):
-   print("\nWorkflow finished, no errors.  List of created files:")
-   print(*files_created, sep='\n')
+    print("\nWorkflow finished, no errors.  List of created files:")
+    print(*files_created, sep='\n')
 
-   if results_file:
-       print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS: ", results_file)
+    if results_file:
+        print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS: ", results_file)
+        print(f"scp {user}@bc4login1.acrc.bris.ac.uk:{results_file} .")
 
-   copy_data_to_rdfs(files_created)
+    copy_data_to_rdfs(files_created)
 
 
 def onerror_message():
