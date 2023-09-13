@@ -44,7 +44,7 @@ headers
 
 All pipelines will standardise each GWAS before running the subsequent steps.  The `SNP` field will be recalculated as
 
-`CHR:POS_EA_OA`, where EA > OA, and the subsequent BETA and EAF will be adjusted accordingly
+`CHR:POS_EA_OA`, where EA and OA are ordered alphabetically, and the subsequent BETA and EAF will be adjusted accordingly
 
 
 ## How it works:

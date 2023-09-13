@@ -1,18 +1,34 @@
+import json
 import os
+import time
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
 from dotenv import load_dotenv
-import time
+from types import SimpleNamespace
 
 load_dotenv()
 user = os.getenv('USER')
 slurm_log_directory = f"/user/work/{user}/slurm_logs/"
 docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
+default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID")
 
-def validate_gwases(files):
-    if not all(Path(file).is_file() for file in files):
-        raise ValueError(f"Error: one of the specified files does not exist")
+def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
+    if not columns:
+        columns = default_columns
+
+    if not Path(gwas_file).is_file():
+        raise ValueError(f"Error: {gwas_file} does not exist")
+
+    with open(gwas_file) as f:
+        headers = f.readline()
+
+    for mandatory_column in mandatory_gwas_columns:
+        column = columns[mandatory_column]
+        if not headers.contains(column):
+            raise ValueError(f"Error: {gwas_file} doesn't contain mandatory column {mandatory_column}/{column}")
+
+    return turn_dict_into_cli_string(columns)
 
 def validate_ancestries(ancestries):
     allowed_ancestries = ["EUR", "EAS", "AFR", "AMR", "SAS"]
@@ -56,9 +72,11 @@ def format_dir_string(directory):
     return directory + "/" if not directory.endswith('/') else directory
 
 
-def turn_results_dict_into_rmd_input(results_dict):
-    return ' '.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
+def turn_dict_into_cli_string(results_dict):
+    return ','.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
 
+def ensure_mandatory_columns_are_present(gwas, columns=default_columns):
+    return 0
 
 def copy_data_to_rdfs(files_created):
     if RDFS_DIR is not None:
@@ -79,7 +97,7 @@ def onsuccess(files_created, results_file=None):
     print(*files_created, sep='\n')
 
     if results_file:
-        print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS: ", results_file)
+        print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS:")
         print(f"scp {user}@bc4login1.acrc.bris.ac.uk:{results_file} .")
 
     copy_data_to_rdfs(files_created)
@@ -96,12 +114,13 @@ if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
 if not os.getenv("RDFS_DIR"):
     print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
 
-if not os.getenv("RDFS_DIR"):
-    print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
-
 DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
 RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
 RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
+GENOME_DATA_DIR = format_dir_string(os.getenv('GENOME_DATA_DIR'))
+LDSC_DIR = format_dir_string(os.getenv('LDSC_DIR'))
+QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
+
 
 if RDFS_DIR and RDFS_DIR.endswith("working/"):
     raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")

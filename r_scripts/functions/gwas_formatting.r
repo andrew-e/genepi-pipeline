@@ -10,7 +10,6 @@ column_map <- list(
 
 standardise_gwas <- function(file_gwas,
                              output_file,
-                             genome_data_dir="/user/work/wt23152/genome_data/1000genomes/",
                              input_format="default",
                              populate_rsid=F,
                              bespoke_column_map=NULL) {
@@ -26,7 +25,7 @@ standardise_gwas <- function(file_gwas,
     standardise_alleles() %>%
     standardise_columns() %>%
     health_check() %>%
-    populate_rsid_from_1000_genomes(genome_data_dir, populate_rsid)
+    populate_rsid_from_1000_genomes(populate_rsid)
 
   vroom::vroom_write(gwas, output_file)
 }
@@ -151,7 +150,7 @@ harmonise_gwases <- function(...) {
   return(gwases)
 }
 
-populate_rsid_from_1000_genomes <- function(gwas, genome_data_dir, populate_rsid=F) {
+populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
   if (populate_rsid == F) return(gwas)
 
   #if (populate_rsid == "full") {

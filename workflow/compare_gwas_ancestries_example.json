@@ -1,0 +1,17 @@
+{
+  "gwases": [
+    {
+        "gwas": "/user/work/wt23152/test_data/first_ais_eur_mvp.tsv.gz",
+        "ancestry": "EUR"
+    },
+    {
+        "gwas": "/user/work/wt23152/test_data/first_ais_his_mvp.tsv.gz",
+        "ancestry": "AMR"
+    },
+    {
+        "gwas": "/user/work/wt23152/test_data/first_ais_afr_mvp.tsv.gz",
+        "ancestry": "AFR"
+    }
+  ],
+  "plink_clump_arguments": "--clump-p1 0.00000005"
+}

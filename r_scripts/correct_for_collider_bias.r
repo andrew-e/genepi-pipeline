@@ -30,7 +30,7 @@ parser <- add_argument(parser, "--harmonised_effects_output",
 parser <- add_argument(parser, "--p_value_thresholds",
                        help = "p value threshold to run corrections",
                        type = "character",
-                       default = "0.1,0.01,0.001,1e-05",
+                       default = "0.1 0.01 0.001 1e-05",
                        nargs = Inf
 )
 

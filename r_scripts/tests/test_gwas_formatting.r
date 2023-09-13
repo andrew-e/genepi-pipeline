@@ -14,3 +14,14 @@ test_that("gwas_formatting.standardise_gwas standardises a gwas", {
   expect_true(all(result$EA < result$OA))
   expect_true(all(grep("\\d+:\\d+_\\w+_\\w+", result$SNP)))
 })
+
+test_that("gwas_formatting.standardise_gwas with bespoke_column_map standardises a gwas", {
+  output_file <- "/tmp/test_data_standardised.tsv.gz"
+  bespoke_column_map <- column_map$default
+  standardise_gwas("r_scripts/tests/data/test_data_small.tsv.gz", output_file, "default")
+  result <- vroom::vroom(output_file)
+
+  expect_equal(nrow(result), nrow(test_gwas))
+  expect_true(all(result$EA < result$OA))
+  expect_true(all(grep("\\d+:\\d+_\\w+_\\w+", result$SNP)))
+})

@@ -28,6 +28,6 @@ jobs: 10
 keep-going: True
 rerun-incomplete: True
 use-singularity: True
-singularity-args: '-B /user/work/$(whoami) -B /user/home/$(whoami) --pwd /home/r_scripts/'
+singularity-args: '-B /user/work/$(whoami) -B /user/home/$(whoami) --env-file .env --pwd /home/r_scripts/'
 printshellcmds: True
 scheduler: greedy

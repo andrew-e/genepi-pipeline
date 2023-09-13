@@ -1,48 +1,33 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-#FILL IN VARIABLES BELOW
-##############################################
-ancestry = "EUR"
-incidence_gwas = f"/user/work/{user}/test_data/test_data_no_rsid.tsv.gz"
-subsequent_gwas = f"/user/work/{user}/test_data/subsequent.tsv"
-plink_clumping_arguments = "--clump-p2 0.001 --clump-r2 0.3"
-genome_data_dir = "/user/work/wt23152/genome_data/1000genomes/"
-##############################################
+with open('../input.json') as pipeline_input:
+    pipeline = json.loads(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
 
+mandatory_gwas_columns = list("CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF")
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
+    pipeline.incidence_columns = resolve_gwas_columns(pipeline.incidence, pipeline.incidence_columns, mandatory_gwas_columns)
+    pipeline.subsequent_columns = resolve_gwas_columns(pipeline.subsequent, pipeline.subsequent_columns, mandatory_gwas_columns)
 
-standardised_incidence_gwas = standardised_gwas_name(incidence_gwas)
-standardised_subsequent_gwas = standardised_gwas_name(subsequent_gwas)
+    clump_dir = DATA_DIR + "clumped_snps/"
+    if not os.path.isdir(clump_dir):
+        os.makedirs(clump_dir)
 
-clump_dir = DATA_DIR + "clumped_snps/"
-if not os.path.isdir(clump_dir):
-   os.makedirs(clump_dir)
-
-clumped_incidence_prefix = clump_dir + file_prefix(incidence_gwas)
+standardised_incidence_gwas = standardised_gwas_name(pipeline.incidence)
+standardised_subsequent_gwas = standardised_gwas_name(pipeline.subsequent)
+clumped_incidence_prefix = clump_dir + file_prefix(pipeline.incidence)
 clumped_incidence = clumped_incidence_prefix + ".clumped"
 
-collider_bias_results = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_collider_bias_results.tsv"
-harmonised_effects = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_harmonised_effects.tsv.gz"
-slopehunter_results = RESULTS_DIR + "collider_bias/" + file_prefix(subsequent_gwas) + "_slopehunter.tsv.gz"
+collider_bias_results = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent) + "_collider_bias_results.tsv"
+harmonised_effects = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent) + "_harmonised_effects.tsv.gz"
+slopehunter_results = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent) + "_slopehunter.tsv.gz"
 
-unadjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(subsequent_gwas) + "_miami_plot.png"
+unadjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(pipeline.subsequent) + "_miami_plot.png"
 slopehunter_adjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(slopehunter_results) + "_miami_plot.png"
+results_file = RESULTS_DIR + "collider_bias/result_" + file_prefix(pipeline.incidence) + "_" + file_prefix(pipeline.subsequent) + ".html"
 
-files_created = {
-    "incidence_gwas": standardised_incidence_gwas,
-    "subsequent_gwas": standardised_subsequent_gwas,
-    "clumped_snps": clumped_incidence,
-    "collider_bias_results": collider_bias_results,
-    "harmonised_gwas": harmonised_effects,
-    "slopehunter_results": slopehunter_results,
-    "unadjuested_miami_plot": unadjusted_miami_plot,
-    "slopehunter_adjusted_miami_plot": slopehunter_adjusted_miami_plot
-}
-results_file = RESULTS_DIR + "collider_bias/result_" + file_prefix(incidence_gwas) + "_" + file_prefix(subsequent_gwas) + ".html"
-results_string = turn_results_dict_into_rmd_input(files_created)
 
 rule all:
     input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, results_file
@@ -52,17 +37,17 @@ rule standardise_gwases:
     resources:
         mem = "16G"
     input:
-        incidence = incidence_gwas,
-        subsequent = subsequent_gwas
+        incidence = pipeline.incidence,
+        subsequent = pipeline.subsequent
     output:
         incidence = standardised_incidence_gwas,
         subsequent = standardised_subsequent_gwas
     shell:
         """
         Rscript standardise_gwas.r \
-            --genome_data_dir {genome_data_dir} \
-            --input_gwas {input.incidence},{input.subsequent} \
-            --output_gwas {output.incidence},{output.subsequent} \
+            --input_gwas {input.incidence} {input.subsequent} \
+            --input_columns {pipeline.incidence_columns} {pipeline.subsequent_columns} \
+            --output_gwas {output.incidence} {output.subsequent} \
             --populate_rsid
         """
 
@@ -75,10 +60,10 @@ rule clump_incidence_gwas:
         clumped_incidence
     shell:
         """
-        plink1.9 --bfile {genome_data_dir}{ancestry} \
+        plink1.9 --bfile {GENOME_DATA_DIR}{pipeline.ancestry} \
             --clump {input.gwas} \
             --clump-snp-field RSID \
-            {plink_clumping_arguments} \
+            {pipeline.plink_clumping_arguments} \
             --out {clumped_incidence_prefix}
         """
 
@@ -140,6 +125,18 @@ rule slopehunter_adjusted_miami_plot:
             --miami_filename {output} \
             --title "Comparing Incidence and SlopeHunter Adjusted Subsequent GWAS"
         """
+
+files_created = {
+    "incidence_gwas": standardised_incidence_gwas,
+    "subsequent_gwas": standardised_subsequent_gwas,
+    "clumped_snps": clumped_incidence,
+    "collider_bias_results": collider_bias_results,
+    "harmonised_gwas": harmonised_effects,
+    "slopehunter_results": slopehunter_results,
+    "unadjuested_miami_plot": unadjusted_miami_plot,
+    "slopehunter_adjusted_miami_plot": slopehunter_adjusted_miami_plot
+}
+results_string = turn_dict_into_cli_string(files_created)
 
 rule create_results_file:
     threads: 4

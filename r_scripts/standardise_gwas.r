@@ -8,10 +8,10 @@ parser <- add_argument(parser, "--input_gwas",
                        type = "character",
                        nargs = Inf
 )
-parser <- add_argument(parser, "--genome_data_dir",
-                       help = "Directory where genome data lives (for RSID)",
+parser <- add_argument(parser, "--input_columns",
+                       help = "Map of column names for pipeline to change it to",
                        type = "character",
-                       default = "/user/work/wt23152/genome_data/1000genomes/"
+                       nargs = Inf
 )
 parser <- add_argument(parser, "--input_format",
                        help = "Input format of the gwas (ie. METAL, BOLT, plink)",
@@ -34,6 +34,7 @@ parser <- add_argument(parser, "--to-output",
 
 args <- parse_args(parser)
 input_gwases <- split_string_into_vector(args$input_gwas)
+input_columns <- split_string_into_vector(args$input_columns)
 output_gwases <- split_string_into_vector(args$output_gwas)
 
 if (length(input_gwases) != length(output_gwases)) {
@@ -43,7 +44,7 @@ if (length(input_gwases) != length(output_gwases)) {
 if (!args$to_output) {
   for (i in seq_along(input_gwases)) {
     create_dir_for_files(output_gwases[i])
-    standardise_gwas(input_gwases[i], output_gwases[i], args$genome_data_dir, args$input_format, args$populate_rsid)
+    standardise_gwas(input_gwases[i], output_gwases[i], args$input_format, args$populate_rsid, bespoke_column_map = input_columns[i])
     gc()
   }
 } else {

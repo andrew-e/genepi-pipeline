@@ -1,0 +1,8 @@
+{
+  "incidence": "",
+  "incidence_columns": {},
+  "subsequent": "",
+  "subsequent_columns": {},
+  "ancestry": "",
+  "plink_clump_arguments": "--clump-p2 0.001 --clump-r2 0.3 --clump-kb 500"
+}

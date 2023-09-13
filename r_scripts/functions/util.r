@@ -1,9 +1,9 @@
 split_string_into_vector <- function(input_string) {
-  return(unlist(strsplit(input_string, '[, ]')))
+  return(unlist(strsplit(input_string, '[ ]')))
 }
 
 split_string_into_named_list <- function(input_string) {
-  split <- unlist(strsplit(input_string, '[=, ]'))
+  split <- unlist(strsplit(input_string, '[=,]'))
   names <- split[c(T, F)]
   values <- split[c(F, T)]
 
