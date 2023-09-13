@@ -10,31 +10,37 @@ Goals:
 ## Onboarding
 
 Steps to start using the pipeline
-#### Clone the repository on blue cristal 4
+### 1. Clone the repository on BlueCrystal 4
 `git clone git@github.com:andrew-e/genepi-pipeline.git && cd genepi-pipeline`
 
-#### Create and activate conda environment
+### 2. Create and activate conda environment
+Ensure you have conda installed and initialised:
 * `conda env create --file environment.yml`
 * `conda activate genepi-pipeline`
 * `module load apps/singularity/3.8.3`
 
-#### Populate the DATA_DIR and RESULTS_DIR and RDFS_DIR environment variables in .env file
+### 3. Populate .env and input.json files
+
+`cp .env_example .env`
+* populate the DATA_DIR and RESULTS_DIR and RDFS_DIR environment variables in .env file
 These should probably be in your *work* or *scratch* space (`/user/work/$(whoami)/...`)
+* RDFS_DIR is optional, but very useful.  All generated files can be copied automatically.  Please ensure the path
+ends in `working/`, which have the `data` and `results` directories underneath (eg. `/projects/MRC-IEU/research/projects/ieu3/px/xxx/working`)
 
-Note: they can't be your rdfs space, as that volume won't mount to into the singularity container
+`cp workflow/input_<specific_pipeline>.json input.json`
+* Each pipeline (as defined in `workflow` directory) has it's own input format.  Please copy the specified json file and populate the data with what you want
+* With each GWAS, you can specify header names, if you do not specify header names as `{"P":"pval", ...}`, it will assume your GWAS has the headers below.
 
-RDFS_DIR is optional, but very useful.  All generated files will be copied automatically.  Please ensure the path
-ends in `working/`, which have the `data` and `results` directories underneath (eg. `/projects/MRC-IEU/research/projects/ieu2/px/xxx/working`)
+### 4. Run the pipeline
+`snakemake --snakefile workflow/<specific_pipeline>.cmk --profile snakemake/`
 
-#### Run the test pipeline
-`snakemake --profile snakemake/`
+If there are errors while running the pipeline, you can find error messages either directly on the screen, or there may be a slurm log file that is outputted on error, which you can look at for clues.
 
 ## Usage:
 
-Each pipeline has its own Snakefile in `workflow`.  The standard column naming for GWASes are:
+The standard column naming for GWASes are:
 
-If you do not specify the expected format of the GWAS (ie. plink, bolt, metal), all pipelines will assume the following
-headers
+If you do not specify the expected format of the GWAS, all pipelines will assume the following headers:
 
 |           | SNP | CHR | BP  | BETA | SE  | P   | EA  | OA  | EAF | RSID | OR  | OR_LB | OR_UB |
 |-----------|-----|-----|-----|------|-----|-----|-----|-----|-----|:-----|-----|-------|-------|

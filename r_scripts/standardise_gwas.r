@@ -10,11 +10,10 @@ parser <- add_argument(parser, "--input_gwas",
 )
 parser <- add_argument(parser, "--input_columns",
                        help = "Map of column names for pipeline to change it to",
-                       type = "character",
-                       nargs = Inf
+                       type = "character"
 )
 parser <- add_argument(parser, "--input_format",
-                       help = "Input format of the gwas (ie. METAL, BOLT, plink)",
+                       help = "Input format of the gwas (ie. metal, bolt, plink, default)",
                        type = "character",
                        default = "default"
 )
@@ -34,8 +33,8 @@ parser <- add_argument(parser, "--to-output",
 
 args <- parse_args(parser)
 input_gwases <- split_string_into_vector(args$input_gwas)
-input_columns <- split_string_into_vector(args$input_columns)
 output_gwases <- split_string_into_vector(args$output_gwas)
+input_columns <- parse_gwas_input_column_maps(args$input_columns)
 
 if (length(input_gwases) != length(output_gwases)) {
   stop("input_gwas and output_gwas need to be the same length")
@@ -44,7 +43,14 @@ if (length(input_gwases) != length(output_gwases)) {
 if (!args$to_output) {
   for (i in seq_along(input_gwases)) {
     create_dir_for_files(output_gwases[i])
-    standardise_gwas(input_gwases[i], output_gwases[i], args$input_format, args$populate_rsid, bespoke_column_map = input_columns[i])
+
+    bespoke_column_map <-split_string_into_named_list(input_columns[i])
+    standardise_gwas(input_gwases[i],
+                     output_gwases[i],
+                     input_format = args$input_format,
+                     populate_rsid = args$populate_rsid,
+                     bespoke_column_map = bespoke_column_map
+    )
     gc()
   }
 } else {

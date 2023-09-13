@@ -13,6 +13,7 @@ standardise_gwas <- function(file_gwas,
                              input_format="default",
                              populate_rsid=F,
                              bespoke_column_map=NULL) {
+
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
   }
@@ -50,8 +51,6 @@ standardise_columns <- function(gwas) {
 
   gwas$SNP <- toupper(gwas$SNP)
   gwas$SNP[grep("^RS", gwas$SNP)] <- tolower(gwas$SNP)
-  gwas$EA <- toupper(gwas$EA)
-  gwas$OA <- toupper(gwas$OA)
 
   gwas$BP <- as.numeric(gwas$BP)
   gwas$P <- as.numeric(gwas$P)
@@ -77,7 +76,6 @@ convert_or_to_beta <- function(gwas) {
 }
 
 health_check <- function(gwas) {
-  print(head(gwas))
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
     stop("GWAS has some P values outside accepted range")
   }
@@ -165,92 +163,9 @@ populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
     return(gwas)
   }
   print("populating RSID...")
-  #gwas$chrbp <- paste0(gwas$CHR, ":", gwas$BP)
   marker_to_rsid_file <- paste0(genome_data_dir, "marker_to_rsid.tsv.gz")
   chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
   gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
 
   return(gwas)
-}
-
-
-#neat faster way to read a big file: vroom(pipe("grep -w UA flights.tsv"), col_names = names(flights))
-# or maybe need to pipe("awk 'NR == 1 || /Incoming/' foo.csv") to include the header row as well
-read_and_format <-function(file_gwas, input_version=default, output_version="default", custom_file_columns=NA){
-  if (input_version == "ieu_ukb_gwas_pipeline"){
-    gwas <- vroom(file_gwas) %>%
-      change_column_names(., ieu_ukb_gwas_columns) %>%
-      standardise_columns(.)
-  }
-  else if (input_version == "metal") {
-    gwas <- vroom(file_gwas) %>%
-      change_column_names(., metal_columns) %>% 
-      standardise_columns(.)
-  }
-  else if (input_version == "ukb_neale") {
-    # UKB data produced by Neale lab
-    print("reading variants")
-    variants <- vroom(paste0("meta/neale_lab_variants_rsid_only.tsv")) # this is a col subset of variants.tsv.bgz from Neale lab
-    print("reading gwas")
-    gwas <-vroom(file_gwas, col_select = c("variant","minor_allele","minor_AF","beta","se","pval"))
-    
-    print("joining")
-    if (nrow(gwas) == nrow(variants)) {
-      merged <- left_join(gwas, variants, by = c("variant"="variant", "minor_allele"="alt")) %>%
-        select(-variant) %>% select(SNP=rsid, everything())
-    }
-    
-    print("formatting")
-    gwas <- format_data(merged, type="outcome",
-                        snp_col = "SNP",
-                        beta_col = "beta",
-                        se_col = "se",
-                        effect_allele_col = "minor_allele",
-                        other_allele_col = "ref",
-                        eaf_col = "minor_AF",
-                        pval_col = "pval")
-    
-    
-  } else if (input_version == 'gwas_cat') {
-    # harmonised data fromat from GWAS catalog
-    gwas <- vroom(file_gwas,
-                  col_select = c("variant_id",'beta', "standard_error","effect_allele","other_allele","effect_allele_frequency","p_value")) %>%
-      format_data(., type="outcome",
-                  snp_col = "variant_id",
-                  beta_col = "beta",
-                  se_col = "standard_error",
-                  effect_allele_col = "effect_allele",
-                  other_allele_col = "other_allele",
-                  eaf_col = "effect_allele_frequency",
-                  pval_col = "p_value")
-  } else if (input_version == "custom") {
-    custom_file_columns <- custom_file_columns %>% select_if(~all(!is.na(.)))
-    stopifnot(dim(custom_file_columns)[2]>0)
-    # data produced by IEU GWAS pipeline: pval col P_BOLT_LMM
-    gwas <- vroom(file_gwas,
-                  col_select = c(custom_file_columns[1,])) %>%
-      format_data(.,
-                  phenotype_col= custom_file_columns$trait,
-                  snp_col = custom_file_columns$custom_SNP,
-                  beta_col = custom_file_columns$custom_beta,
-                  se_col = custom_file_columns$custom_se,
-                  effect_allele_col = custom_file_columns$custom_effect_allele,
-                  other_allele_col = custom_file_columns$custom_other_allele,
-                  eaf_col = custom_file_columns$custom_eaf,
-                  pval_col = custom_file_columns$custom_pval,
-                  samplesize_col = custom_file_columns$custom_samplesize,
-                  ncase_col = custom_file_columns$custom_ncase ,
-                  ncontrol_col = custom_file_columns$custom_ncontrol,
-                  chr_col = custom_file_columns$custom_chr,
-                  pos_col = custom_file_columns$custom_pos,
-                  z_col = custom_file_columns$custom_z,
-                  info_col = custom_file_columns$custom_info,
-                  units_col = custom_file_columns$custom_units,
-                  gene_col = custom_file_columns$custom_gene
-      )
-    #TODO drop .outcome
-  }
-  
-  return(gwas)
-  
 }

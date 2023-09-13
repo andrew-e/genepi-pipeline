@@ -2,6 +2,10 @@ split_string_into_vector <- function(input_string) {
   return(unlist(strsplit(input_string, '[ ]')))
 }
 
+parse_gwas_input_column_maps <- function(input_column_string) {
+  column_map_as_a_string <- unlist(strsplit(input_column_string, '[:]'))
+}
+
 split_string_into_named_list <- function(input_string) {
   split <- unlist(strsplit(input_string, '[=,]'))
   names <- split[c(T, F)]

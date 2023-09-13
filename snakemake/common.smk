@@ -105,7 +105,8 @@ def onsuccess(files_created, results_file=None):
 
 def onerror_message():
     last_log = subprocess.check_output(f"ls -t {slurm_log_directory} | head -n1", shell=True, universal_newlines=True)
-    print("\nThere was an error in the pipeline, please check the last written slurm log to see the error:")
+    print("\n---------------------")
+    print("There was an error in the pipeline, please check the last written slurm log to see the error:")
     print(slurm_log_directory + last_log)
 
 
