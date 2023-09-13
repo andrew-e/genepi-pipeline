@@ -1,3 +1,0 @@
-﻿trait_label,trait,original_file,source,samplesize,ncase,ncontrol,units,population,custom_SNP,custom_beta,custom_se,custom_pval,custom_effect_allele,custom_other_allele,custom_eaf,custom_chr,custom_pos,custom_samplesize,custom_ncase,custom_ncontrol,custom_gene,custom_units,custom_z,custom_info
-Body mass index,bmi,,ieu_ukb_gwas_pipeline,500000,,,kg/m2,EUR,,,,,,,,,,,,,,,,
-Body mass index,bmi,,custom,700000,,,kg/m2,EUR,rsid,est,se,p,ea,oa,ea_freq,CHR,BP,,,,,,,

@@ -1,42 +1,28 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-with open('../input.json') as pipeline_input:
-    pipeline = json.loads(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
+with open('input.json') as pipeline_input:
+    pipeline = json.load(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
 
-mandatory_gwas_columns = list("CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF")
-
-########################################
-gwases = [
-    {
-        "gwas": "/user/work/wt23152/test_data/first_ais_eur_mvp.tsv.gz",
-        "ancestry": "EUR"
-    },
-    {
-        "gwas": "/user/work/wt23152/test_data/first_ais_his_mvp.tsv.gz",
-        "ancestry": "AMR"
-    },
-    {
-        "gwas": "/user/work/wt23152/test_data/first_ais_afr_mvp.tsv.gz",
-        "ancestry": "AFR"
-    }
-]
-########################################
+mandatory_gwas_columns = ["CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF"]
 
 onstart:
-    print("##### GWAS Comparison Pipeline #####")
-    for gwas in pipeline.gwases:
-        gwas.columns = resolve_gwas_columns(gwas.file, gwas.columns, mandatory_gwas_columns)
-    validate_ancestries([g['ancestry'] for g in pipeline.gwases])
+    print("##### GWAS Ancestry Comparison Pipeline #####")
 
-    clump_dir = DATA_DIR + "clumped_snps/"
-    if not os.path.isdir(clump_dir):
-        os.makedirs(clump_dir)
 
-    for g in gwases:
-        g["standardised_gwas"] = standardised_gwas_name(g["gwas"])
-        g["clumped_snp_prefix"] = clump_dir + file_prefix(g["gwas"])
-        g["clumped_snps"] = g["clumped_snp_prefix"] + ".clumped"
+for gwas in pipeline.gwases:
+    gwas.columns = resolve_gwas_columns(gwas.file, gwas.columns, mandatory_gwas_columns)
+validate_ancestries([g.ancestry for g in pipeline.gwases])
+
+
+clump_dir = DATA_DIR + "clumped_snps/"
+if not os.path.isdir(clump_dir):
+    os.makedirs(clump_dir)
+
+for g in pipeline.gwases:
+    g.standardised_gwas = standardised_gwas_name(g.file)
+    g.clumped_snp_prefix = clump_dir + file_prefix(g.file)
+    g.clumped_snps = g.clumped_snp_prefix + ".clumped"
 
 #List of output files
 expected_vs_observed_results = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_outcomes.tsv"
@@ -47,23 +33,25 @@ heterogeneity_snp_comparison = RESULTS_DIR + "plots/ancestry_heterogeneity_snp_c
 results_file = RESULTS_DIR + "ancestry_comparison/result_summary.html"
 
 
-ancestries = list([g['ancestry'] for g in gwases])
-clumped_snp_prefixes = list([g['clumped_snp_prefix'] for g in gwases])
+ancestries = list([g.ancestry for g in pipeline.gwases])
+clumped_snp_prefixes = list([g.clumped_snp_prefix for g in pipeline.gwases])
 
 rule all:
     input: expected_vs_observed_results, expected_vs_observed_variants, heterogeneity_scores, heterogeneity_plot, heterogeneity_snp_comparison, results_file
 
+input_columns = ":".join([g.columns for g in pipeline.gwases])
 rule standardise_gwases:
     threads: 4
     resources:
-        mem = f"{len(gwases)*5}G"
-    input: [g['file'] for g in gwases]
-    output: [g['standardised_gwas'] for g in gwases]
+        mem = f"{len(pipeline.gwases)*5}G"
+    input: [g.file for g in pipeline.gwases]
+    output: [g.standardised_gwas for g in pipeline.gwases]
     shell:
         """
         Rscript standardise_gwas.r \
             --input_gwas {input} \
             --output_gwas {output} \
+            --input_columns {input_columns} \
             --populate_rsid
         """
 
@@ -71,8 +59,8 @@ rule find_clumped_snps:
     resources:
         mem = "4G"
     input:
-        gwases = [g['standardised_gwas'] for g in gwases]
-    output: [g['clumped_snps'] for g in gwases]
+        gwases = [g.standardised_gwas for g in pipeline.gwases]
+    output: [g.clumped_snps for g in pipeline.gwases]
     shell:
         """
         gwases=({input.gwases})
@@ -93,10 +81,10 @@ rule find_clumped_snps:
 
 rule compare_observed_vs_expected_gwas:
     resources:
-        mem = f"{len(gwases)*10}G"
+        mem = f"{len(pipeline.gwases)*10}G"
     input:
-        gwases = [g['standardised_gwas'] for g in gwases],
-        clumped_files = [g['clumped_snps'] for g in gwases]
+        gwases = [g.standardised_gwas for g in pipeline.gwases],
+        clumped_files = [g.clumped_snps for g in pipeline.gwases]
     output:
         results = expected_vs_observed_results,
         variants = expected_vs_observed_variants
@@ -111,10 +99,10 @@ rule compare_observed_vs_expected_gwas:
 
 rule heterogeneity_between_ancestries:
     resources:
-        mem = f"{len(gwases)*10}G"
+        mem = f"{len(pipeline.gwases)*10}G"
     input:
-        gwases = [g['standardised_gwas'] for g in gwases],
-        clumped_files = [g['clumped_snps'] for g in gwases]
+        gwases = [g.standardised_gwas for g in pipeline.gwases],
+        clumped_files = [g.clumped_snps for g in pipeline.gwases]
     output:
         heterogeneity_scores = heterogeneity_scores,
         heterogeneity_plot = heterogeneity_plot,

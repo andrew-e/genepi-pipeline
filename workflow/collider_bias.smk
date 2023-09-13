@@ -1,19 +1,20 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-with open('../input.json') as pipeline_input:
-    pipeline = json.loads(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
+with open('input.json') as pipeline_input:
+    pipeline = json.load(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
 
-mandatory_gwas_columns = list("CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF")
+mandatory_gwas_columns = ["CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF"]
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
-    pipeline.incidence_columns = resolve_gwas_columns(pipeline.incidence, pipeline.incidence_columns, mandatory_gwas_columns)
-    pipeline.subsequent_columns = resolve_gwas_columns(pipeline.subsequent, pipeline.subsequent_columns, mandatory_gwas_columns)
 
-    clump_dir = DATA_DIR + "clumped_snps/"
-    if not os.path.isdir(clump_dir):
-        os.makedirs(clump_dir)
+clump_dir = DATA_DIR + "clumped_snps/"
+if not os.path.isdir(clump_dir):
+    os.makedirs(clump_dir)
+
+pipeline.incidence_columns = resolve_gwas_columns(pipeline.incidence, pipeline.incidence_columns, mandatory_gwas_columns)
+pipeline.subsequent_columns = resolve_gwas_columns(pipeline.subsequent, pipeline.subsequent_columns, mandatory_gwas_columns)
 
 standardised_incidence_gwas = standardised_gwas_name(pipeline.incidence)
 standardised_subsequent_gwas = standardised_gwas_name(pipeline.subsequent)
@@ -33,7 +34,7 @@ rule all:
     input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, results_file
 
 rule standardise_gwases:
-    threads: 4
+    threads: 8
     resources:
         mem = "16G"
     input:
@@ -46,7 +47,7 @@ rule standardise_gwases:
         """
         Rscript standardise_gwas.r \
             --input_gwas {input.incidence} {input.subsequent} \
-            --input_columns {pipeline.incidence_columns} {pipeline.subsequent_columns} \
+            --input_columns {pipeline.incidence_columns}:{pipeline.subsequent_columns} \
             --output_gwas {output.incidence} {output.subsequent} \
             --populate_rsid
         """
@@ -60,10 +61,10 @@ rule clump_incidence_gwas:
         clumped_incidence
     shell:
         """
-        plink1.9 --bfile {GENOME_DATA_DIR}{pipeline.ancestry} \
+        plink1.9 --bfile {THOUSAND_GENOMES_DIR}{pipeline.ancestry} \
             --clump {input.gwas} \
             --clump-snp-field RSID \
-            {pipeline.plink_clumping_arguments} \
+            {pipeline.plink_clump_arguments} \
             --out {clumped_incidence_prefix}
         """
 

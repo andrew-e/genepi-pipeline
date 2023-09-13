@@ -1,3 +1,4 @@
+import gzip
 import json
 import os
 import time
@@ -14,18 +15,23 @@ docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
 default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID")
 
 def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
-    if not columns:
-        columns = default_columns
+    columns = vars(columns)
+    columns = default_columns | columns
 
     if not Path(gwas_file).is_file():
         raise ValueError(f"Error: {gwas_file} does not exist")
 
-    with open(gwas_file) as f:
-        headers = f.readline()
+    headers = None
+    if gwas_file.endswith(".gz"):
+        with gzip.open(gwas_file) as f:
+            headers = str(f.readline())
+    else:
+        with open(gwas_file) as f:
+            headers = str(f.readline())
 
     for mandatory_column in mandatory_gwas_columns:
         column = columns[mandatory_column]
-        if not headers.contains(column):
+        if not column in headers:
             raise ValueError(f"Error: {gwas_file} doesn't contain mandatory column {mandatory_column}/{column}")
 
     return turn_dict_into_cli_string(columns)
@@ -118,7 +124,7 @@ if not os.getenv("RDFS_DIR"):
 DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
 RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
 RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
-GENOME_DATA_DIR = format_dir_string(os.getenv('GENOME_DATA_DIR'))
+THOUSAND_GENOMES_DIR = format_dir_string(os.getenv('THOUSAND_GENOMES_DIR'))
 LDSC_DIR = format_dir_string(os.getenv('LDSC_DIR'))
 QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
 
