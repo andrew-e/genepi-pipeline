@@ -21,13 +21,13 @@ def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
     if not Path(gwas_file).is_file():
         raise ValueError(f"Error: {gwas_file} does not exist")
 
-    headers = None
     if gwas_file.endswith(".gz"):
         with gzip.open(gwas_file) as f:
             headers = str(f.readline())
     else:
         with open(gwas_file) as f:
             headers = str(f.readline())
+    headers = re.split(',| |\t', headers)
 
     for mandatory_column in mandatory_gwas_columns:
         column = columns[mandatory_column]

@@ -1,8 +1,12 @@
 {
-  "incidence": "",
-  "incidence_columns": {},
-  "subsequent": "",
-  "subsequent_columns": {"SNP":"", "CHR":"", "BP":"", "EA":"", "OA":"", "EAF":"", "P":"", "BETA":"", "SE":""},
+  "incident": {
+    "file": "",
+    "columns": {}
+  },
+  "subsequent": {
+    "file": "",
+    "columns": {"SNP":"", "CHR":"", "BP":"", "EA":"", "OA":"", "EAF":"", "P":"", "BETA":"", "SE":""}
+  },
   "ancestry": "",
   "plink_clump_arguments": "--clump-p2 0.001 --clump-r2 0.3 --clump-kb 500"
 }
