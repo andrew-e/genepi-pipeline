@@ -7,14 +7,14 @@ RUN apt update && \
     libxml2-dev libcurl4-gnutls-dev libssl-dev libgmp-dev libnlopt-dev cmake libcairo2-dev libxt-dev \
     texlive-latex-recommended r-cran-sass r-cran-mime \
     plink1.9 sqlite3 wget vim ripgrep && \
-    mkdir -p /home/r_scripts && \
+    mkdir -p /home/scripts && \
     rm -rf /var/lib/apt/lists/*
 
 COPY docker/ docker
 RUN Rscript docker/requirements.r
 RUN pip install -r docker/requirements.txt
 
-COPY r_scripts /home/r_scripts
+COPY scripts /home/scripts
 #RUN wget http://csg.sph.umich.edu/abecasis/metal/download/Linux-metal.tar.gz
 #RUN install bcftools too?
 #RUN wget http://christianbenner.com/finemap_v1.4.2_x86_64.tgz && tar -xf finemap_v1.4.2_x86_64.tgz && mv finemap_v1.4.2_x86_64 /usr/local/bin/finemap

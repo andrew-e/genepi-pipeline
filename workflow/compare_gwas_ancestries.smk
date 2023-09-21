@@ -1,9 +1,7 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-with open('input.json') as pipeline_input:
-    pipeline = json.load(pipeline_input, object_hook=lambda data: SimpleNamespace(**data))
-
+pipeline = read_json_into_object("input.json")
 mandatory_gwas_columns = ["CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF"]
 
 onstart:

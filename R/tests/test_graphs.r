@@ -1,13 +1,12 @@
 library(testthat)
-source("r_scripts/functions/graphs.r")
-source("r_scripts/functions/util.r")
+source("R/graphs.r")
+source("R/util.r")
 
 test_that("coloc.coloc_analysis returns a successfull coloc analysis", {
-  miami_plot_file <- "/tmp/miami_plot.png"
-  file.remove(miami_plot_file)
+  miami_plot_file <- tempfile(fileext = ".png")
 
-  result <- miami_plot("r_scripts/tests/data/test_data_small.tsv.gz",
-                       "r_scripts/tests/data/test_data_small.tsv.gz",
+  result <- miami_plot("R/tests/data/test_data_small.tsv.gz",
+                       "R/tests/data/test_data_small.tsv.gz",
                        miami_plot_file,
                        title = "ooyooo",
                        chr = 1,

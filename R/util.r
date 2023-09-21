@@ -18,11 +18,34 @@ split_string_into_named_list <- function(input_string) {
 #'
 #' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
 vroom_chr <- function(gwas_file, chr, col_select=NULL) {
-  pipe_command <- paste0("head -n1 ", gwas_file, " && rg -Iz '\t", chr, "\t' ", gwas_file)
-  pipe_command <- paste0("rg -Iz '\t", chr, "\t' ", gwas_file)
+  if (endsWith(gwas_file, ".gz")) {
+    grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '^", chr, ":' ", gwas_file)
+  }
+  else {
+    grep_command <- paste0("head -n 1", gwas_file, " && rg -I '^", chr, ":' ", gwas_file)
+  }
 
-  gwas <- vroom::vroom(pipe(pipe_command), col_select = col_select)
+  gwas <- vroom::vroom(pipe(grep_command), col_select = col_select)
   return(gwas)
+}
+
+#' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
+#' this is much faster way of doing it (I think?)
+#'
+#' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
+vroom_snps <- function(gwas_file, ...) {
+  snps <- list(...)
+  snps <- paste(snps, collapse="\t|")
+
+  if (endsWith(gwas_file, ".gz")) {
+    grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+  }
+  else {
+    grep_command <- paste0("head -n 1", gwas_file, " && rg -I '", snps, "' ", gwas_file)
+  }
+
+  snps_in_gwas <- vroom::vroom(pipe(grep_command))
+  return(snps_in_gwas)
 }
 
 gwas_region <- function(gwas, chr, bp, range = 250000) {

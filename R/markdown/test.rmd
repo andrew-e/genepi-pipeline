@@ -25,7 +25,7 @@ knitr::kable(collider_bias_results)
 
 ```
 module add apps/singularity/3.8.3
-singularity run -B /user/work/$(whoami) -B /user/home/$(whoami) --pwd /home/r_scripts/ \
+singularity run -B /user/work/$(whoami) -B /user/home/$(whoami) --pwd /home/scripts/ \
   docker://andrewrrelmore/genepi_pipeline:get_other_docker_tag() \
     adjust_gwas_for_collider_bias.r --gwas params$test \
     --beta <BETA> \

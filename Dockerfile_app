@@ -1,6 +1,6 @@
 FROM andrewrrelmore/genepi_pipeline_base:test
 
-COPY r_scripts /home/r_scripts
-WORKDIR "/home/r_scripts"
+COPY scripts /home/scripts
+WORKDIR "/home/scripts"
 
 CMD ["/bin/bash"]

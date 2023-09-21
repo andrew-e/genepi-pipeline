@@ -14,7 +14,21 @@ slurm_log_directory = f"/user/work/{user}/slurm_logs/"
 docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
 default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID")
 
+def read_json_into_object(json_file):
+    if not os.path.isfile(".env"):
+        raise ValueError("Error: .env file doesn't exist")
+    if not os.path.isfile(json_file):
+        raise ValueError(f"Error: {json_file} file doesn't exist")
+
+    with open(json_file) as pipeline_input:
+        pipeline = json.load(pipeline_input,object_hook=lambda data: SimpleNamespace(**data))
+    return pipeline
+
+
 def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
+    if columns is None:
+        columns = SimpleNamespace()
+
     columns = vars(columns)
     columns = default_columns | columns
 
@@ -103,6 +117,7 @@ def onsuccess(files_created, results_file=None):
     print(*files_created, sep='\n')
 
     if results_file:
+        print("\n---------------------")
         print("PLEASE SEE THIS HTML FOR A SUMMARY OF RESULTS:")
         print(f"scp {user}@bc4login1.acrc.bris.ac.uk:{results_file} .")
 
