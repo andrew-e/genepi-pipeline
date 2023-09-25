@@ -12,9 +12,11 @@ load_dotenv()
 user = os.getenv('USER')
 slurm_log_directory = f"/user/work/{user}/slurm_logs/"
 docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
-default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID")
+default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID")
+mandatory_gwas_columns = ["CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF"]
+#TODO: do something fancy with conditionally mandatory columns (BETA or OR, SE or OR_SE (or OR_LB, OR_UB)
 
-def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
+def resolve_gwas_columns(gwas_file, columns, additional_mandatory_columns):
     columns = vars(columns)
     columns = default_columns | columns
 
@@ -29,7 +31,7 @@ def resolve_gwas_columns(gwas_file, columns, mandatory_gwas_columns):
             headers = str(f.readline()).strip()
     headers = re.split('\n|,| |\t', headers)
 
-    for mandatory_column in mandatory_gwas_columns:
+    for mandatory_column in additional_mandatory_columns:
         column = columns[mandatory_column]
         if not column in headers:
             raise ValueError(f"Error: {gwas_file} doesn't contain mandatory column {mandatory_column}/{column}")
@@ -129,7 +131,7 @@ LDSC_DIR = format_dir_string(os.getenv('LDSC_DIR'))
 QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
 
 
-if RDFS_DIR and RDFS_DIR.endswith("working/"):
+if RDFS_DIR and not RDFS_DIR.endswith("working/"):
     raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")
 
 cleanup_old_slurm_logs()

@@ -52,7 +52,7 @@ map_rsid_list_to_snps <- function(gwas, rsids=c()) {
 
 create_html_from_rmd <- function(rmd_file, params = list(), output_file) {
   library(rmarkdown, quietly = T)
-  temp_file <- tempfile(fileext = ".Rmd")
+  temp_file <- tempfile(fileext = ".rmd", tmpdir = "/tmp")
   file.copy(rmd_file, temp_file, overwrite = TRUE)
 
   rmarkdown::render(temp_file,

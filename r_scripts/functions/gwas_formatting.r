@@ -3,7 +3,7 @@ library(tidyr, quietly=T)
 library(dplyr, quietly=T)
 
 column_map <- list(
-  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
@@ -23,8 +23,9 @@ standardise_gwas <- function(file_gwas,
 
   gwas <- vroom::vroom(file_gwas) %>%
     change_column_names(gwas_columns) %>%
-    standardise_alleles() %>%
+    filter_incomplete_rows() %>%
     standardise_columns() %>%
+    standardise_alleles() %>%
     health_check() %>%
     populate_rsid_from_1000_genomes(populate_rsid)
 
@@ -36,6 +37,20 @@ format_gwas_output <- function(file_gwas, output_file, output_format="default") 
     change_column_names(column_map[[output_format]], opposite_mapping = T)
 
   vroom:vroom_write(gwas, output_file, delim="\t")
+}
+
+filter_incomplete_rows <- function(gwas) {
+  filtered_gwas <- gwas[!is.na(gwas$EAF) & !is.null(gwas$EAF) &
+                          !is.na(gwas$OA) & !is.null(gwas$OA) &
+                          !is.na(gwas$EA) & !is.null(gwas$EA) &
+                          !is.na(gwas$CHR) & !is.null(gwas$CHR) &
+                          !is.na(gwas$BP) & !is.null(gwas$BP),
+  ]
+  filtered_rows <- nrow(gwas) - nrow(filtered_gwas)
+  if (filtered_rows > 0) {
+    print(paste("WARNING: Filtering out ", nrow(gwas) - nrow(filtered_gwas), "rows due to NULLs and NAs"))
+  }
+  return(filtered_gwas)
 }
 
 standardise_columns <- function(gwas) {
@@ -51,9 +66,6 @@ standardise_columns <- function(gwas) {
   else if (all(c("OR", "OR_SE") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
     gwas <- convert_or_to_beta(gwas)
   }
-
-  gwas$SNP <- toupper(gwas$SNP)
-  gwas$SNP[grep("^RS", gwas$SNP)] <- tolower(gwas$SNP)
 
   gwas$BP <- as.numeric(gwas$BP)
   gwas$P <- as.numeric(gwas$P)
@@ -76,7 +88,7 @@ convert_or_to_beta <- function(gwas) {
 
   if ("OR_SE" %in% colnames(gwas)) {
     gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
-    gwas$OR_UB <- gwas$OR - (gwas$OR_SE * 1.96)
+    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
   }
 
   gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
@@ -129,7 +141,7 @@ standardise_alleles <- function(gwas) {
   gwas$OA[to_flip] <- gwas$EA[to_flip]
   gwas$EA[to_flip] <- temp
 
-  gwas$SNP <- paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA)
+  gwas$SNP <- toupper(paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA))
   gwas %>% dplyr::select(SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, everything())
 
   return(gwas)

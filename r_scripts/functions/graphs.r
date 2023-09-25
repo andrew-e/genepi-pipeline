@@ -131,6 +131,16 @@ miami_plot <- function(first_gwas_filename,
     second_gwas <- gwas_region(second_gwas, chr, bp, range)
     top_ylim <-  max(-log10(second_gwas$P))
   }
+  else {
+    first_chrs <- sort(unique(first_gwas$CHR))
+    second_chrs <- sort(unique(second_gwas$CHR))
+    shared_chrs <- sort(intersect(first_chrs, second_chrs))
+
+    if (!(all(shared_chrs == first_chrs) & all(shared_chrs == second_gwas))) {
+      first_gwas <- subset(first_gwas, CHR %in% shared_chrs)
+      second_gwas <- subset(second_gwas, CHR %in% shared_chrs)
+    }
+  }
   print(nrow(first_gwas))
   print(nrow(second_gwas))
 
