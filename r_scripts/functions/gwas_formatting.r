@@ -48,6 +48,9 @@ standardise_columns <- function(gwas) {
   if (all(c("OR", "OR_LB", "OR_UB") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
     gwas <- convert_or_to_beta(gwas)
   }
+  else if (all(c("OR", "OR_SE") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
+    gwas <- convert_or_to_beta(gwas)
+  }
 
   gwas$SNP <- toupper(gwas$SNP)
   gwas$SNP[grep("^RS", gwas$SNP)] <- tolower(gwas$SNP)
@@ -68,11 +71,16 @@ standardise_columns <- function(gwas) {
 #' @return gwas with new columns BETA and SE
 #'
 convert_or_to_beta <- function(gwas) {
-    library(boot)
-    gwas$BETA <- log(gwas$OR)
+  library(boot)
+  gwas$BETA <- log(gwas$OR)
 
-    gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
-    return(gwas)
+  if ("OR_SE" %in% colnames(gwas)) {
+    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
+    gwas$OR_UB <- gwas$OR - (gwas$OR_SE * 1.96)
+  }
+
+  gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
+  return(gwas)
 }
 
 health_check <- function(gwas) {
@@ -146,6 +154,20 @@ harmonise_gwases <- function(...) {
   })
 
   return(gwases)
+}
+
+populate_snp_from_rsid <- function(gwas) {
+  start <- Sys.time()
+  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
+  marker_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
+  print(paste("loaded file: ", Sys.time()-start))
+
+  matching <- match(gwas$RSID, marker_to_rsid$RSID)
+  gwas$CHRBP<- marker_to_rsid$HG37[matching]
+  gwas <- tidyr::separate(data = gwas, col = "CHRBP", into = c("CHR", "BP"), sep = ":")
+  print(paste("mapped and returned: ", Sys.time()-start))
+
+  return(gwas)
 }
 
 populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
