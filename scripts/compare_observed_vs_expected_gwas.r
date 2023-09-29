@@ -31,8 +31,8 @@ args <- parse_args(parser)
 gwas_filenames <- split_string_into_vector(args$gwas_filenames)
 clumped_filenames <- split_string_into_vector(args$clumped_filenames)
 
-if (length(gwas_filenames) != length(clumped_filenames)) {
-  stop("List size of --gwas_filenames and --clumped_filenames are different.  They must be the same.")
+if (length(gwas_filenames) - length(clumped_filenames) > 1) {
+  stop("There are not enough clumped files (compared to gwases) to successfully run this operation.")
 }
 
 create_dir_for_files(args$result_output, args$variants_output)

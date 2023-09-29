@@ -1,0 +1,10 @@
+{
+  "dataset": "metabrain",
+  "gwases": [
+    {
+      "file": "",
+      "columns": {},
+      "ancestry": "EUR"
+    }
+  ]
+}

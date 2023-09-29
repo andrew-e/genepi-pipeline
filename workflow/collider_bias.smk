@@ -26,10 +26,12 @@ slopehunter_results = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subs
 unadjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(pipeline.subsequent.file) + "_miami_plot.png"
 slopehunter_adjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(slopehunter_results) + "_miami_plot.png"
 results_file = RESULTS_DIR + "collider_bias/result_" + file_prefix(pipeline.incident.file) + "_" + file_prefix(pipeline.subsequent.file) + ".html"
+expected_vs_observed_results = RESULTS_DIR + "collider_bias/expected_vs_observed_outcomes.tsv"
+expected_vs_observed_variants = RESULTS_DIR + "collider_bias/expected_vs_observed_variants.tsv"
 
 
 rule all:
-    input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, results_file
+    input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, expected_vs_observed_results, expected_vs_observed_variants, results_file
 
 rule standardise_gwases:
     threads: 8
@@ -123,6 +125,24 @@ rule slopehunter_adjusted_miami_plot:
             --second_gwas {input.second_gwas} \
             --miami_filename {output} \
             --title "Comparing Incidence and SlopeHunter Adjusted Subsequent GWAS"
+        """
+
+rule compare_observed_vs_expected_gwas:
+    resources:
+        mem = "16G"
+    input:
+        gwases = [standardised_incidence_gwas, standardised_subsequent_gwas],
+        clumped_files = [clumped_incidence]
+    output:
+        results = expected_vs_observed_results,
+        variants = expected_vs_observed_variants
+    shell:
+        """
+        Rscript compare_observed_vs_expected_gwas.r  \
+            --gwas_filenames {input.gwases} \
+            --clumped_filenames {input.clumped_files} \
+            --result_output {output.results} \
+            --variants_output {output.variants}
         """
 
 files_created = {
