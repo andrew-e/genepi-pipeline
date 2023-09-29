@@ -3,7 +3,7 @@ library(tidyr, quietly=T)
 library(dplyr, quietly=T)
 
 column_map <- list(
-  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
@@ -23,8 +23,9 @@ standardise_gwas <- function(file_gwas,
 
   gwas <- vroom::vroom(file_gwas) %>%
     change_column_names(gwas_columns) %>%
-    standardise_alleles() %>%
+    filter_incomplete_rows() %>%
     standardise_columns() %>%
+    standardise_alleles() %>%
     health_check() %>%
     populate_rsid_from_1000_genomes(populate_rsid)
 
@@ -38,6 +39,20 @@ format_gwas_output <- function(file_gwas, output_file, output_format="default") 
   vroom:vroom_write(gwas, output_file, delim="\t")
 }
 
+filter_incomplete_rows <- function(gwas) {
+  filtered_gwas <- gwas[!is.na(gwas$EAF) & !is.null(gwas$EAF) &
+                          !is.na(gwas$OA) & !is.null(gwas$OA) &
+                          !is.na(gwas$EA) & !is.null(gwas$EA) &
+                          !is.na(gwas$CHR) & !is.null(gwas$CHR) &
+                          !is.na(gwas$BP) & !is.null(gwas$BP),
+  ]
+  filtered_rows <- nrow(gwas) - nrow(filtered_gwas)
+  if (filtered_rows > 0) {
+    print(paste("WARNING: Filtering out ", nrow(gwas) - nrow(filtered_gwas), "rows due to NULLs and NAs"))
+  }
+  return(filtered_gwas)
+}
+
 standardise_columns <- function(gwas) {
   if (!all(c("CHR", "BP") %in% colnames(gwas))) {
     if(all(grepl("\\d:\\d", gwas$SNP))) {
@@ -48,9 +63,9 @@ standardise_columns <- function(gwas) {
   if (all(c("OR", "OR_LB", "OR_UB") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
     gwas <- convert_or_to_beta(gwas)
   }
-
-  gwas$SNP <- toupper(gwas$SNP)
-  gwas$SNP[grep("^RS", gwas$SNP)] <- tolower(gwas$SNP)
+  else if (all(c("OR", "OR_SE") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
+    gwas <- convert_or_to_beta(gwas)
+  }
 
   gwas$BP <- as.numeric(gwas$BP)
   gwas$P <- as.numeric(gwas$P)
@@ -68,11 +83,16 @@ standardise_columns <- function(gwas) {
 #' @return gwas with new columns BETA and SE
 #'
 convert_or_to_beta <- function(gwas) {
-    library(boot)
-    gwas$BETA <- log(gwas$OR)
+  library(boot)
+  gwas$BETA <- log(gwas$OR)
 
-    gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
-    return(gwas)
+  if ("OR_SE" %in% colnames(gwas)) {
+    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
+    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
+  }
+
+  gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
+  return(gwas)
 }
 
 health_check <- function(gwas) {
@@ -121,7 +141,7 @@ standardise_alleles <- function(gwas) {
   gwas$OA[to_flip] <- gwas$EA[to_flip]
   gwas$EA[to_flip] <- temp
 
-  gwas$SNP <- paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA)
+  gwas$SNP <- toupper(paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA))
   gwas %>% dplyr::select(SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, everything())
 
   return(gwas)
@@ -146,6 +166,20 @@ harmonise_gwases <- function(...) {
   })
 
   return(gwases)
+}
+
+populate_snp_from_rsid <- function(gwas) {
+  start <- Sys.time()
+  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
+  marker_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
+  print(paste("loaded file: ", Sys.time()-start))
+
+  matching <- match(gwas$RSID, marker_to_rsid$RSID)
+  gwas$CHRBP<- marker_to_rsid$HG37[matching]
+  gwas <- tidyr::separate(data = gwas, col = "CHRBP", into = c("CHR", "BP"), sep = ":")
+  print(paste("mapped and returned: ", Sys.time()-start))
+
+  return(gwas)
 }
 
 populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {

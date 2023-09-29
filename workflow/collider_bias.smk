@@ -69,9 +69,9 @@ rule clump_incidence_gwas:
         """
 
 rule collider_bias_correction:
-    threads: 4
+    threads: 8
     resources:
-        mem = "24G"
+        mem = "32G"
     input:
         incidence_gwas = standardised_incidence_gwas,
         subsequent_gwas = standardised_subsequent_gwas,
