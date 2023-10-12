@@ -1,5 +1,6 @@
 .snakemake/
 .cache/
+.ipynb_checkpoints/
 input.json
 .env
 .DS_Store

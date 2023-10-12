@@ -6,27 +6,16 @@ parse_gwas_input_column_maps <- function(input_column_string) {
   column_map_as_a_string <- unlist(strsplit(input_column_string, '[:]'))
 }
 
+extract_numbers_from_string <- function(string) {
+  regmatches(string, gregexpr("[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?", string))
+}
+
 split_string_into_named_list <- function(input_string) {
   split <- unlist(strsplit(input_string, '[=,]'))
   names <- split[c(T, F)]
   values <- split[c(F, T)]
 
   return(structure(as.list(values), names=names))
-}
-
-#' vroom_chr: faster way of opening a GWAS, only load a specific chromosome's worth of data
-#'
-#' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
-vroom_chr <- function(gwas_file, chr, col_select=NULL) {
-  if (endsWith(gwas_file, ".gz")) {
-    grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '^", chr, ":' ", gwas_file)
-  }
-  else {
-    grep_command <- paste0("head -n 1", gwas_file, " && rg -I '^", chr, ":' ", gwas_file)
-  }
-
-  gwas <- vroom::vroom(pipe(grep_command), col_select = col_select)
-  return(gwas)
 }
 
 #' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
@@ -49,12 +38,13 @@ vroom_snps <- function(gwas_file, ...) {
 }
 
 gwas_region <- function(gwas, chr, bp, range = 250000) {
-  return(subset(gwas, CHR == chr & BP > (bp - range) & BP < (bp + range)))
+  return(subset(gwas, CHR == chr & BP > (bp - floor(range/2)) & BP < (bp + floor(range/2))))
 }
 
 file_prefix <- function(file_path) {
   file_name <- basename(file_path)
   file_prefix <- sub("\\..*", "", file_name)
+  file_prefix <- sub("_std", "", file_prefix)
   return(file_prefix)
 }
 

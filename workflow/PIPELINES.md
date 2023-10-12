@@ -33,3 +33,14 @@ All pipelines will standardise each GWAS before running the subsequent steps.  T
   * `ancestry`: of incident and subsequent GWAS.  Options: "EUR", "EAS", "AFR", "AMR", "SAS"
 * `plink_clump_arguments`: arguments that are fed into the `plink --clump` call.  [Options here](https://zzz.bwh.harvard.edu/plink/clump.shtml)
 
+## MR for QTLs 
+
+### input.json
+* `gwas`: Incident GWAS summary statistics file, ancestry, and optional column name map
+* `qtl`:
+  * `dataset`: only metabrain supported for now (soon to be pqtl)
+  * `subcategory`:
+    * if dataset is `metabrain`, accepted subcategories are `cortex`, `cerebellum`, `basalganglia`, and `spinalcord`
+    * If left empty, all subcategories will be run
+  * `exposures`: list of specific exposures to be run. If left empty all exposures will be run in the dataset
+    * example: `["IL6", "CCL2"]`

@@ -253,7 +253,7 @@ adjust_gwas_data_from_weights_and_save <- function(gwas,
 
   gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
   gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%
-    rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
+    dplyr::rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
 
   vroom::vroom_write(gwas, output_file)
 }

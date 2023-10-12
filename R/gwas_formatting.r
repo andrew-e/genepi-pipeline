@@ -175,7 +175,7 @@ populate_snp_from_rsid <- function(gwas) {
   print(paste("loaded file: ", Sys.time()-start))
 
   matching <- match(gwas$RSID, marker_to_rsid$RSID)
-  gwas$CHRBP<- marker_to_rsid$HG37[matching]
+  gwas$CHRBP <- marker_to_rsid$HG37[matching]
   gwas <- tidyr::separate(data = gwas, col = "CHRBP", into = c("CHR", "BP"), sep = ":")
   print(paste("mapped and returned: ", Sys.time()-start))
 
@@ -202,4 +202,21 @@ populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
   gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
 
   return(gwas)
+}
+
+
+create_bed_file_from_gwas <- function(gwas, output_file) {
+  N <- nrow(gwas)
+  bed_file <- data.frame(CHR = character(N),
+    BP1 = numeric(N),
+    BP2 = numeric(N)
+  )
+
+  split <- tidyr::separate(data = gwas, col = "SNP", into = c("CHR", "BP1"), sep = "[:_]", remove = T)
+
+  bed_file$CHR <- paste0("chr", split$CHR)
+  bed_file$BP1 <- split$BP1
+  bed_file$BP2 <- split$BP1
+
+  vroom::vroom_write(bed_file, output_file)
 }

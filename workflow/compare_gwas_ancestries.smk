@@ -2,14 +2,13 @@ include: "../snakemake/common.smk"
 singularity: docker_container
 
 pipeline = read_json_into_object("input.json")
-mandatory_gwas_columns = ["CHR", "BP", "BETA", "SE", "P", "EA", "OA", "EAF"]
 
 onstart:
     print("##### GWAS Ancestry Comparison Pipeline #####")
 
 
 for gwas in pipeline.gwases:
-    gwas.columns = resolve_gwas_columns(gwas.file, gwas.columns, mandatory_gwas_columns)
+    gwas.columns = resolve_gwas_columns(gwas.file, gwas.columns)
 validate_ancestries([g.ancestry for g in pipeline.gwases])
 
 
@@ -134,7 +133,7 @@ rule create_results_file:
     shell:
         """
         Rscript create_results_file.r \
-            --rmd_file markdown/ancestry_comparison.rmd \
+            --rmd_file /home/R/markdown/ancestry_comparison.rmd \
             --params {results_string} \
             --output_file {output}
         """

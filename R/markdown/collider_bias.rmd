@@ -10,11 +10,8 @@ library(vroom)
 library(dplyr, quietly=T)
 ```
 
-### Manhattan Plots of GWAS
-
+### Unadjusted Manhattan Plots of GWAS
 `r sprintf("![Miami Plot Comparing Unadjusted GWAS at p = 0.0001](%s)", params$unadjuested_miami_plot)`
-
-`r sprintf("![Miami Plot of SlopeHunter Adjusted GWAS at p = 0.0001](%s)", params$slopehunter_adjusted_miami_plot)`
 
 ### Comparison of Collider Bias Results
 ```{r echo=F}
@@ -22,24 +19,38 @@ collider_bias_results <- vroom::vroom(params$collider_bias_results, show_col_typ
 knitr::kable(collider_bias_results)
 ```
 
-### Comparing GWAS Results Across Clumped SNPs
+### Expected vs Observed Results
 
-This is a comparison of all results from incidence clumping, across incidence, subsequent, and subsequent slopehunter adjusted (p = 0.001)
+This shows all expected vs. observed results when comparing the incident vs. subsequent GWASes
 ```{r echo=F}
-clumped_snps <- data.table::fread(params$clumped_snps)$SNP
+expected_vs_observed <- vroom::vroom(params$expected_vs_observed, show_col_types = F)
+knitr::kable(expected_vs_observed)
+```
+
+### Adjusted Manhattan Plots of GWAS
+`r sprintf("![Miami Plot of SlopeHunter Adjusted GWAS at p = 0.0001](%s)", params$slopehunter_adjusted_miami_plot)`
+
+### Comparing GWAS Results Across Top Hits in Subsequent GWAS
+
+This is a comparison of all top hits returned from clumped subsequent unadjusted
+```{r echo=F}
+clumped_snps <- data.table::fread(params$clumped_subsequent)$SNP
 columns <- c("SNP", "RSID", "BETA", "SE", "P")
-incidence <- vroom::vroom(params$incidence_gwas, show_col_types = F) %>%
-  subset(RSID %in% clumped_snps, select = columns)
-incidence$GWAS <- "Incidence"
+
 subsequent <- vroom::vroom(params$subsequent_gwas, show_col_types = F) %>%
-  subset(RSID %in% clumped_snps, select = columns)
+        subset(RSID %in% clumped_snps, select = columns)
 subsequent$GWAS <- "Subsequent"
+
+incidence <- vroom::vroom(params$incidence_gwas, show_col_types = F) %>%
+  subset(RSID %in% subsequent$RSID, select = columns)
+incidence$GWAS <- "Incidence"
+
 subsequent_adjusted <- vroom::vroom(params$slopehunter_results, show_col_types = F) %>%
-  subset(RSID %in% clumped_snps, select = columns)
+  subset(RSID %in% subsequent$RSID, select = columns)
 subsequent_adjusted$GWAS <- "Subsequent Adjusted"
 
 all_clumped <- rbind(incidence, subsequent, subsequent_adjusted) %>%
-  arrange(SNP)
+  arrange(SNP) %>% select(GWAS, SNP, everything())
 
 knitr::kable(all_clumped)
 ```

@@ -1,0 +1,32 @@
+---
+title: "Collider Bias Results"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+---
+```{r include = F}
+library(vroom)
+library(dplyr, quietly=T)
+```
+
+### Volcano Plot of MR Results Against QTL Dataset
+`r sprintf("![Volcano Plot of MR Results](%s)", params$volcano_plot)`
+
+### Statistically Significant MR results (after Bonferroni correction)
+
+```{r echo=F}
+coloc_results <- vroom::vroom(params$mr_results, show_col_types = F) |> subset(p.adjusted < 0.05)
+knitr::kable(mr_results)
+```
+
+### Coloc Results
+```{r echo=F}
+coloc_results <- vroom::vroom(params$coloc_results, show_col_types = F)
+knitr::kable(coloc_results)
+```
+
+### Additional info
+
+* This pipeline was run using the github repository: https://github.com/andrew-e/genepi-pipeline
+* and the docker image: docker://andrewrrelmore/genepi_pipeline:`r get_other_docker_tag()`

@@ -1,10 +1,12 @@
 {
-  "dataset": "metabrain",
-  "gwases": [
-    {
-      "file": "",
-      "columns": {},
-      "ancestry": "EUR"
-    }
-  ]
+  "gwas": {
+    "file": "",
+    "columns": {},
+    "ancestry": "EUR"
+  },
+  "qtl": {
+    "dataset": "metabrain",
+    "subcategory": "cortex",
+    "exposures": []
+  }
 }
