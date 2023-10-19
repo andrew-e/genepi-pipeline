@@ -1,5 +1,5 @@
 ---
-title: "Collider Bias Results"
+title: "MR `r params$dataset` QTL Results"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   prettydoc::html_pretty:
@@ -8,21 +8,25 @@ output:
 ```{r include = F}
 library(vroom)
 library(dplyr, quietly=T)
+coloc_results <- vroom::vroom(params$coloc_results, show_col_types = F)
+options(scipen=1)
 ```
 
-### Volcano Plot of MR Results Against QTL Dataset
-`r sprintf("![Volcano Plot of MR Results](%s)", params$volcano_plot)`
+### Volcano Plot of MR Results Against `r params$dataset` QTL Dataset
+`r sprintf("![](%s)", params$volcano_plot)`
 
 ### Statistically Significant MR results (after Bonferroni correction)
-
+Only showing top 20 results if there are more.
 ```{r echo=F}
-coloc_results <- vroom::vroom(params$mr_results, show_col_types = F) |> subset(p.adjusted < 0.05)
-knitr::kable(mr_results)
+mr_results <- vroom::vroom(params$mr_results, show_col_types = F) |>
+  subset(p.adjusted < 0.05 & exposure %in% coloc_results$exposure) |>
+  dplyr::arrange(p.adjusted) |> select(-c(id.exposure, id.outcome))
+
+knitr::kable(head(mr_results, 20))
 ```
 
 ### Coloc Results
 ```{r echo=F}
-coloc_results <- vroom::vroom(params$coloc_results, show_col_types = F)
 knitr::kable(coloc_results)
 ```
 

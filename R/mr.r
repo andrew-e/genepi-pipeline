@@ -6,20 +6,20 @@ perform_mr_on_metabrain_datasets <- function(gwas_filename, ancestry="EUR", subc
   file_pattern <- paste0(tolower(subcategory), "_", tolower(ancestry))
   metabrain_top_hits <- list.files(metabrain_top_hits_dir, pattern = file_pattern, full.names = T)
 
-  run_mr_on_qtl_data(gwas_filename, results_output = results_output, qtl_files = metabrain_top_hits, exposures, pop = ancestry)
+  run_mr_on_qtl_data(gwas_filename, results_output = results_output, qtl_files = metabrain_top_hits, exposures)
 }
 
 #' TODO: not in full use yet
 #'
 #'
-perform_mr_on_pqtl_datasets <- function(gwas_filename, ancestry="EUR", subcategory=None, results_output, cis_only = T) {
+perform_mr_on_pqtl_datasets <- function(gwas_filename, results_output, subcategory=None, cis_only = T) {
   pqtl_file_pattern <- if(cis_only) ".*_cis_only.*" else ".*_cis_trans.*"
   pqtl_datasets <- list.files(pqtl_top_hits_dir, pattern = pqtl_file_pattern, full.names = T)
 
-  run_mr_on_qtl_data(gwas_filename, results_output = results_output, qtl_files = pqtl_datasets, pop = ancestry)
+  run_mr_on_qtl_data(gwas_filename,qtl_files = pqtl_datasets, results_output = results_output)
 }
 
-run_mr_on_qtl_data <- function(gwas_filename, qtl_files, ancestry="EUR", exposures=c(), results_output) {
+run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposures=c()) {
   all_pqtl_mr_results <- lapply(qtl_files, function(qtl_file) {
     qtl_exposure <- TwoSampleMR::read_exposure_data(qtl_file,
                                                     snp_col="SNP",

@@ -8,13 +8,15 @@ test_that("collider_bias.correct_for_collider_bias works well", {
   slopehunter_file <- tempfile(fileext = ".tsv.gz")
   harmonised_results <- tempfile(fileext = ".tsv.gz")
 
-  conduct_collider_bias_analysis("R/tests/data/test_data_small.tsv.gz",
-                                 "R/tests/data/test_data_small.tsv.gz",
-                                 "R/tests/data/clumped_snps.tsv.gz",
-                                 collider_bias_results_file,
-                                 harmonised_results,
-                                 slopehunter_file,
-                                 p_value_thresholds = c(0.001)
+  suppressWarnings(
+      conduct_collider_bias_analysis("R/tests/data/test_data_small.tsv.gz",
+                                   "R/tests/data/test_data_small.tsv.gz",
+                                   "R/tests/data/clumped_snps.tsv.gz",
+                                   collider_bias_results_file,
+                                   harmonised_results,
+                                   slopehunter_file,
+                                   p_value_thresholds = c(0.001)
+    )
   )
 
   expect_true(file.exists(collider_bias_results_file))

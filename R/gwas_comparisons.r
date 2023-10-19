@@ -40,9 +40,9 @@ compare_two_gwases_from_clumped_hits <- function(first_gwas, second_gwas, clumpe
 
   #vroom has trouble reading plink --clump output
   clumped_snps <- data.table::fread(clumped_snps, select = clump_columns)
-  first_gwas <- vroom::vroom(first_gwas, col_select = comparison_columns) %>%
+  first_gwas <- vroom::vroom(first_gwas, col_select = dplyr::all_of(comparison_columns)) |>
     subset(RSID %in% clumped_snps$SNP)
-  second_gwas <- vroom::vroom(second_gwas, col_select = comparison_columns)
+  second_gwas <- vroom::vroom(second_gwas, col_select = dplyr::all_of(comparison_columns))
 
   harmonised_gwases <- harmonise_gwases(first_gwas, second_gwas)
   results <- expected_vs_observed_replication(harmonised_gwases[[1]]$BETA,
@@ -131,7 +131,7 @@ compare_heterogeneity_across_ancestries <- function(gwas_filenames,
   clumped_snps <- unique(clumped_snps)
 
   gwases <- lapply(gwas_filenames, function(gwas_filename) {
-    vroom::vroom(gwas_filename, col_select = comparison_columns) %>%
+    vroom::vroom(gwas_filename, col_select = dplyr::all_of(comparison_columns)) |>
       subset(RSID %in% clumped_snps)
   })
   for (i in seq_along(gwases)) {

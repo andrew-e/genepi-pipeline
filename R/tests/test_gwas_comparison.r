@@ -50,7 +50,9 @@ test_that("gwas_comparison.compare_heterogeneity_across_ancestries works well", 
   first_plot  <- tempfile(fileext = ".png")
   second_plot <- tempfile(fileext = ".png")
 
-  compare_heterogeneity_across_ancestries(input_gwases, input_clumps, input_ancestries, heterogeneity_file, first_plot, second_plot)
+  suppressWarnings(
+      compare_heterogeneity_across_ancestries(input_gwases, input_clumps, input_ancestries, heterogeneity_file, first_plot, second_plot)
+  )
 
   expect_true(file.exists(heterogeneity_file))
   results <- vroom::vroom(heterogeneity_file)

@@ -95,6 +95,11 @@ convert_or_to_beta <- function(gwas) {
   return(gwas)
 }
 
+convert_z_to_p <- function(gwas) {
+  gwas$P <- 2 * pnorm(-abs(gwas$Z))
+  return(gwas)
+}
+
 health_check <- function(gwas) {
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
     stop("GWAS has some P values outside accepted range")
@@ -218,5 +223,22 @@ create_bed_file_from_gwas <- function(gwas, output_file) {
   bed_file$BP1 <- split$BP1
   bed_file$BP2 <- split$BP1
 
-  vroom::vroom_write(bed_file, output_file)
+  vroom::vroom_write(bed_file, output_file, col_names=F)
+}
+
+read_liftover_output_file <- function(filename) {
+  liftover_bed <- data.table::fread(filename)
+  N <- nrow(liftover_bed)
+
+  bed_map <- data.frame(
+    ORIG_MARKER = character(N),
+    NEW_MARKER = character(N)
+  )
+
+  liftover_bed$V1 <- gsub("chr", "", liftover_bed$V1)
+  liftover_bed$V4 <- gsub("^.*-", "", liftover_bed$V4)
+  bed_map$NEW_MARKER <- paste(liftover_bed$V1, liftover_bed$V2, sep=":")
+  bed_map$ORIG_MARKER <- paste(liftover_bed$V1, liftover_bed$V4, sep=":")
+
+  return(bed_map)
 }

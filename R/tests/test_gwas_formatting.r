@@ -3,12 +3,11 @@ library(vroom)
 source("R/gwas_formatting.r")
 source("R/util.r")
 
-test_that("gwas_formatting.standardise_gwas standardises a gwas", {
+test_that("gwas_formatting.vroom_snps gets just a handful of SNPS from a GWAS", {
   gwas <- "R/tests/data/test_data_small.tsv.gz"
-  snp <- "19:12436574_A_G"
-  result <- vroom_snps(gwas, snp, "10:100392738_C_T")
-  print(result)
-  expect_true(result[result$SNP == snp, ]$SNP == snp)
+  snps <- c("19:12436574_A_G", "10:100392738_C_T")
+  result <- vroom_snps(gwas, snps)
+  expect_true(all(result$SNP %in% snps))
 })
 
 test_that("gwas_formatting.standardise_gwas standardises a gwas", {

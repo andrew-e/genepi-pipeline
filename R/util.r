@@ -22,12 +22,15 @@ split_string_into_named_list <- function(input_string) {
 #' this is much faster way of doing it (I think?)
 #'
 #' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
-vroom_snps <- function(gwas_file, ...) {
-  snps <- list(...)
+vroom_snps <- function(gwas_file, snps=c()){
   snps <- paste(snps, collapse="\t|")
 
   if (endsWith(gwas_file, ".gz")) {
-    grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+    if (Sys.info()["sysname"] == "Darwin") {
+      grep_command <- paste0("zcat < ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+    } else {
+      grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+    }
   }
   else {
     grep_command <- paste0("head -n 1", gwas_file, " && rg -I '", snps, "' ", gwas_file)
@@ -70,7 +73,9 @@ create_html_from_rmd <- function(rmd_file, params = list(), output_file) {
 
   rmarkdown::render(temp_file,
                     output_file = output_file,
-                    params = params)
+                    params = params,
+                    quiet = T
+  )
 }
 
 get_other_docker_tag <- function() {

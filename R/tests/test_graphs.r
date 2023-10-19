@@ -2,7 +2,7 @@ library(testthat)
 source("R/graphs.r")
 source("R/util.r")
 
-test_that("coloc.coloc_analysis returns a successfull coloc analysis", {
+test_that("graphs.miami_plot given a specific range, creates a png file ", {
   miami_plot_file <- tempfile(fileext = ".png")
 
   result <- miami_plot("R/tests/data/test_data_small.tsv.gz",

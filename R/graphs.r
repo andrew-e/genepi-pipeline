@@ -60,7 +60,7 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
     plot_thing + ggplot2::geom_text(ggplot2::aes(x = 1.5, label = .data[[q_stat_column]]))
   }
 
-  ggsave(output_file, width = 2000, units = "px")
+  ggplot2::ggsave(output_file, width = 2000, units = "px")
 }
 
 #' manhattan_and_qq: produce manhattan and qq plot from a GWAS file
@@ -71,7 +71,7 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq = T) {
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
-  gwas <- vroom::vroom(gwas_filename, col_select = manhattan_columns)
+  gwas <- vroom::vroom(gwas_filename, col_select = dplyr::all_of(manhattan_columns))
   gwas <- gwas[complete.cases(gwas), ]
 
   png(manhattan_filename, width = 1500, height = 500)
@@ -106,8 +106,8 @@ miami_plot <- function(first_gwas_filename,
   show_specific_region <- !is.na(chr) & !is.na(bp) & !is.na(range)
 
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
-  first_gwas <- vroom::vroom(first_gwas_filename, col_select = manhattan_columns)
-  second_gwas <- vroom::vroom(second_gwas_filename, col_select = manhattan_columns)
+  first_gwas <- vroom::vroom(first_gwas_filename, col_select = dplyr::all_of(manhattan_columns))
+  second_gwas <- vroom::vroom(second_gwas_filename, col_select = dplyr::all_of(manhattan_columns))
   first_gwas <- first_gwas[complete.cases(first_gwas), ]
   second_gwas <- second_gwas[complete.cases(second_gwas), ]
 
