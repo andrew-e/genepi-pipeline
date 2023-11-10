@@ -36,7 +36,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   subsequent <- data.table::fread(subsequent_gwas)
   clumped_snps <- map_rsid_list_to_snps(incidence, clumped_snps$SNP)
 
-  print(paste("Found", length(clumped_snps), "in incidence GWAS for clumping"))
+  message(paste("Found", length(clumped_snps), "in incidence GWAS for clumping"))
 
   slopehunter_incidence <- SlopeHunter::read_incidence(incidence_gwas,
                                                        snp_col = "SNP",
@@ -79,19 +79,14 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
     se_cols = c("SE.incidence", "SE.prognosis"),
     EA_cols = c("EA.incidence", "EA.prognosis"),
     OA_cols = c("OA.incidence", "OA.prognosis")
-  )
+  ) |> subset(remove == F & palindromic == F)
 
-  harmonised_effects <- harmonised_effects[!harmonised_effects$remove, ]
-  harmonised_effects <- subset(harmonised_effects, remove == FALSE | (palindromic == TRUE & remove == TRUE))
   vroom::vroom_write(harmonised_effects, harmonised_effects_result_file)
 
   clumped_snps <- tolower(clumped_snps)
+  pruned_harmonised_effects <- subset(harmonised_effects, (SNP %in% clumped_snps) & !is.na(BETA.prognosis) & BETA.prognosis < 10)
 
-  pruned_harmonised_effects <- subset(harmonised_effects, (SNP %in% clumped_snps) == TRUE)
-  pruned_harmonised_effects <- subset(pruned_harmonised_effects, is.na(BETA.prognosis) == FALSE)
-  pruned_harmonised_effects <- subset(pruned_harmonised_effects, BETA.prognosis < 10)
-
-  print("Starting SlopeHunter")
+  message("Starting SlopeHunter")
   pruned_harmonised_effects_df <- data.frame(pruned_harmonised_effects)
 
   for (p_value_threshold in p_value_thresholds) {
@@ -111,7 +106,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
     slopehunter_se <- slopehunter_result$bse
     fit <- slopehunter_result$Fit
 
-    collider_bias_results <- collider_bias_results %>% dplyr::add_row(
+    collider_bias_results <- dplyr::add_row(collider_bias_results,
       METHOD = collider_bias_type$slopehunter,
       P_VALUE_THRESHOLD = p_value_threshold,
       SNPS_USED = table(fit$clusters)[1],
@@ -123,7 +118,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   }
 
   library(MendelianRandomization, quietly = T)
-  print("Starting Dudbridge cwls")
+  message("Starting Dudbridge cwls")
 
   cwls_coreection <- MendelianRandomization::mr_ivw(MendelianRandomization::mr_input(
     bx = pruned_harmonised_effects$BETA.incidence,
@@ -137,13 +132,13 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   weighting <- (sum(pruned_harmonised_effects$weights * pruned_harmonised_effects$BETA.incidence^2)) /
     (
       (sum(pruned_harmonised_effects$weights * pruned_harmonised_effects$BETA.incidence^2)) -
-        (sum(pruned_harmonised_effects$weights * pruned_harmonised_effects$SE.incidence^2))
+      (sum(pruned_harmonised_effects$weights * pruned_harmonised_effects$SE.incidence^2))
     )
 
   cwls_estimated_slope <- cwls_coreection$Estimate * weighting
   cwls_estimated_standard_error <- cwls_coreection$StdError * weighting
 
-  collider_bias_results <- collider_bias_results %>% dplyr::add_row(
+  collider_bias_results <- dplyr::add_row(collider_bias_results,
     METHOD = collider_bias_type$cwls,
     P_VALUE_THRESHOLD = NA,
     SNPS_USED = length(clumped_snps),
@@ -153,7 +148,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
     PLEIOTROPIC = NA
   )
 
-  print("Starting TwoSampleMR ivw")
+  message("Starting TwoSampleMR ivw")
   library(TwoSampleMR, quietly = T)
   for (p_value_threshold in p_value_thresholds) {
     mr_incidence <- TwoSampleMR::read_exposure_data(incidence_gwas,
@@ -169,9 +164,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
                                                     sep="\t"
     )
 
-    mr_incidence <- subset(mr_incidence, pval.exposure <= p_value_threshold) %>%
-      subset((SNP %in% clumped_snps) == TRUE) %>%
-      subset(duplicated(mr_incidence) == FALSE)
+    mr_incidence <- subset(mr_incidence, pval.exposure <= p_value_threshold & (SNP %in% clumped_snps) & !duplicated((mr_incidence)))
     mr_incidence$exposure <- "incidence"
     mr_incidence$id.exposure <- "incidence"
     mr_incidence$mr_keep.exposure <- TRUE
@@ -193,7 +186,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
     mr_harmonised <- TwoSampleMR::harmonise_data(mr_incidence, mr_progression)
 
     mr_results <- TwoSampleMR::mr(mr_harmonised, method_list = c("mr_ivw"))
-    collider_bias_results <- collider_bias_results %>% dplyr::add_row(
+    collider_bias_results <- dplyr::add_row(collider_bias_results,
       METHOD = collider_bias_type$mr_ivw,
       P_VALUE_THRESHOLD = p_value_threshold,
       SNPS_USED = mr_results$nsnp,
@@ -242,8 +235,8 @@ adjust_gwas_data_from_weights_and_save <- function(gwas,
   harmonised_effects[[adjusted_se]] <- sqrt(
     (harmonised_effects$SE.prognosis * harmonised_effects$SE.prognosis) +
       ((beta * beta) * (harmonised_effects$SE.incidence * harmonised_effects$SE.incidence)) +
-      ((harmonised_effects$BETA.incidence * harmonised_effects$BETA.incidence) * (se * se)) +
-      ((harmonised_effects$SE.incidence * harmonised_effects$SE.incidence) * (se * se))
+      ((harmonised_effects$BETA.incidence * harmonised_effects$BETA.incidence) * (se ^ 2)) +
+      ((harmonised_effects$SE.incidence * harmonised_effects$SE.incidence) * (se ^ 2))
   )
 
   harmonised_effects[[adjusted_p]] <- pchisq(

@@ -3,7 +3,7 @@ library(tidyr, quietly=T)
 library(dplyr, quietly=T)
 
 column_map <- list(
-  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
@@ -11,7 +11,7 @@ column_map <- list(
 standardise_gwas <- function(file_gwas,
                              output_file,
                              input_format="default",
-                             populate_rsid=F,
+                             populate_rsid_option="PARTIAL",
                              bespoke_column_map=NULL) {
 
   if (is.null(column_map[[input_format]])) {
@@ -21,22 +21,35 @@ standardise_gwas <- function(file_gwas,
   #TODO: if we need to add bespoke input format wrangling here, we can
   gwas_columns <- if(!is.null(bespoke_column_map)) bespoke_column_map else column_map[[input_format]]
 
-  gwas <- vroom::vroom(file_gwas) %>%
-    change_column_names(gwas_columns) %>%
-    filter_incomplete_rows() %>%
-    standardise_columns() %>%
-    standardise_alleles() %>%
-    health_check() %>%
-    populate_rsid_from_1000_genomes(populate_rsid)
+  gwas <- vroom::vroom(file_gwas) |>
+    change_column_names(gwas_columns) |>
+    filter_incomplete_rows() |>
+    standardise_columns() |>
+    standardise_alleles() |>
+    health_check() |>
+    populate_rsid(populate_rsid_option)
 
   vroom::vroom_write(gwas, output_file)
 }
 
+populate_rsid <- function(option) {
+  if (option == "NO" || column_map$default$RSID %in% colnames(gwas)) {
+    message("Skipping RSID population for GWAS")
+  }
+  else if (option == "FULL") {
+    gwas <- populate_full_rsids(gwas)
+  }
+  else if (option == "PARTIAL") {
+    gwas <- populate_partial_rsids(gwas)
+  }
+  return (gwas)
+}
+
 format_gwas_output <- function(file_gwas, output_file, output_format="default") {
-  gwas <- vroom::vroom(file_gwas) %>%
+  gwas <- vroom::vroom(file_gwas) |>
     change_column_names(column_map[[output_format]], opposite_mapping = T)
 
-  vroom:vroom_write(gwas, output_file, delim="\t")
+  vroom::vroom_write(gwas, output_file)
 }
 
 filter_incomplete_rows <- function(gwas) {
@@ -48,7 +61,7 @@ filter_incomplete_rows <- function(gwas) {
   ]
   filtered_rows <- nrow(gwas) - nrow(filtered_gwas)
   if (filtered_rows > 0) {
-    print(paste("WARNING: Filtering out ", nrow(gwas) - nrow(filtered_gwas), "rows due to NULLs and NAs"))
+    warning(paste("Warning: Filtering out ", filtered_rows, "rows due to NULLs and NAs"))
   }
   return(filtered_gwas)
 }
@@ -75,30 +88,6 @@ standardise_columns <- function(gwas) {
 }
 
 
-#' convert_or_to_beta: Given an OR and lower and upper bounds,
-#'   calculates the BETA, and SE.
-#'   based on this answer: https://stats.stackexchange.com/a/327684
-#'
-#' @param gwas: dataframe with the following columns: OR, LB (lower bound), UB (upper bound)
-#' @return gwas with new columns BETA and SE
-#'
-convert_or_to_beta <- function(gwas) {
-  library(boot)
-  gwas$BETA <- log(gwas$OR)
-
-  if ("OR_SE" %in% colnames(gwas)) {
-    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
-    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
-  }
-
-  gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.95996)
-  return(gwas)
-}
-
-convert_z_to_p <- function(gwas) {
-  gwas$P <- 2 * pnorm(-abs(gwas$Z))
-  return(gwas)
-}
 
 health_check <- function(gwas) {
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
@@ -147,7 +136,7 @@ standardise_alleles <- function(gwas) {
   gwas$EA[to_flip] <- temp
 
   gwas$SNP <- toupper(paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA))
-  gwas %>% dplyr::select(SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, everything())
+  gwas <- dplyr::select(gwas, SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, dplyr::everything())
 
   return(gwas)
 }
@@ -162,12 +151,11 @@ harmonise_gwases <- function(...) {
   gwases <- list(...)
 
   snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
-  print(paste("Number of shared SNPs after harmonisation:", length(snpids)))
+  message(paste("Number of shared SNPs after harmonisation:", length(snpids)))
 
   gwases <- lapply(gwases, function(gwas) {
-    gwas %>%
-      dplyr::filter(SNP %in% snpids) %>%
-      dplyr::arrange(SNP)
+    dplyr::filter(gwas, SNP %in% snpids) |>
+    dplyr::arrange(SNP)
   })
 
   return(gwases)
@@ -177,37 +165,16 @@ populate_snp_from_rsid <- function(gwas) {
   start <- Sys.time()
   marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
   marker_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
-  print(paste("loaded file: ", Sys.time()-start))
+  message(paste("loaded file: ", Sys.time()-start))
 
   matching <- match(gwas$RSID, marker_to_rsid$RSID)
   gwas$CHRBP <- marker_to_rsid$HG37[matching]
   gwas <- tidyr::separate(data = gwas, col = "CHRBP", into = c("CHR", "BP"), sep = ":")
-  print(paste("mapped and returned: ", Sys.time()-start))
+  message(paste("mapped and returned: ", Sys.time()-start))
 
   return(gwas)
 }
 
-populate_rsid_from_1000_genomes <- function(gwas, populate_rsid=F) {
-  if (populate_rsid == F) return(gwas)
-
-  #if (populate_rsid == "full") {
-  #  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
-  #}
-  #else {
-  #  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid.tsv.gz")
-  #}
-
-  if(column_map$default$RSID %in% colnames(gwas)) {
-    print("GWAS already has an RSID field, will not overwrite")
-    return(gwas)
-  }
-  print("populating RSID...")
-  marker_to_rsid_file <- paste0(genome_data_dir, "marker_to_rsid.tsv.gz")
-  chrpos_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
-  gwas$RSID <- chrpos_to_rsid$RSID[match(gwas$SNP, chrpos_to_rsid$HG37)]
-
-  return(gwas)
-}
 
 
 create_bed_file_from_gwas <- function(gwas, output_file) {
@@ -227,7 +194,7 @@ create_bed_file_from_gwas <- function(gwas, output_file) {
 }
 
 read_liftover_output_file <- function(filename) {
-  liftover_bed <- data.table::fread(filename)
+  liftover_bed <- vroom::vroom(filename)
   N <- nrow(liftover_bed)
 
   bed_map <- data.frame(

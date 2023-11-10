@@ -32,7 +32,8 @@ rule standardise_gwases:
         Rscript standardise_gwas.r \
             --input_gwas {input} \
             --output_gwas {output} \
-            --input_columns {pipeline.gwas.columns}
+            --input_columns {pipeline.gwas.columns} \
+            --populate_rsid NO
         """
 
 

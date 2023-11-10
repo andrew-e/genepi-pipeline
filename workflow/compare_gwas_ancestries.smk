@@ -48,8 +48,7 @@ rule standardise_gwases:
         Rscript standardise_gwas.r \
             --input_gwas {input} \
             --output_gwas {output} \
-            --input_columns {input_columns} \
-            --populate_rsid
+            --input_columns {input_columns}
         """
 
 rule find_clumped_snps:
@@ -67,7 +66,7 @@ rule find_clumped_snps:
         for i in "${{!gwases[@]}}"
         do
             ancestry=${{ancestries[$i]}}
-            plink1.9 --bfile /user/work/wt23152/genome_data/1000genomes/$ancestry \
+            plink1.9 --bfile {THOUSAND_GENOMES_DIR}/$ancestry \
                 --clump ${{gwases[$i]}} \
                 --clump-p1 0.0000005 \
                 --clump-snp-field RSID \

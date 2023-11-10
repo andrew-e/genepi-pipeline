@@ -9,6 +9,7 @@ perform_mr_on_metabrain_datasets <- function(gwas_filename, ancestry="EUR", subc
   run_mr_on_qtl_data(gwas_filename, results_output = results_output, qtl_files = metabrain_top_hits, exposures)
 }
 
+
 #' TODO: not in full use yet
 #'
 #'

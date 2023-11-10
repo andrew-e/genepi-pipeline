@@ -50,8 +50,7 @@ rule standardise_gwases:
         Rscript standardise_gwas.r \
             --input_gwas {input.incidence} {input.subsequent} \
             --input_columns {pipeline.incident.columns}:{pipeline.subsequent.columns} \
-            --output_gwas {output.incidence} {output.subsequent} \
-            --populate_rsid
+            --output_gwas {output.incidence} {output.subsequent}
         """
 
 rule clump_incidence_gwas:

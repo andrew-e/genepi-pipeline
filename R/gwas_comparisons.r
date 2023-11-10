@@ -53,8 +53,8 @@ compare_two_gwases_from_clumped_hits <- function(first_gwas, second_gwas, clumpe
   results$res$COMPARISON <- comparison_name
   results$variants$COMPARISON <- comparison_name
   results$variants$SNP <- harmonised_gwases[[1]]$SNP
-  results$variants <- dplyr::select(results$variants, COMPARISON, SNP, everything())
-  results$res <- dplyr::select(results$res, COMPARISON, everything())
+  results$variants <- dplyr::select(results$variants, COMPARISON, SNP, dplyr::everything())
+  results$res <- dplyr::select(results$res, COMPARISON, dplyr::everything())
 
   return(results)
 }
@@ -155,7 +155,7 @@ plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resut
   }))
 
   grouped_forest_plot(forest_plot_rows,
-                      title = "SNPs that Have Heterogeneity After Correcting for Multiple Testing",
+                      title = "Plot of SNPs That Are Heterogeneous",
                       group_column = "ancestry",
                       output_file = heterogeneity_forest_plot_file,
                       #p_value_column = "Qpval" ??
@@ -175,8 +175,8 @@ plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resut
 #' - Q = vector of p-values for Cochrane's Q statistic for each SNP
 #' - Qj = Data frame of per-population outlier q values for each SNP
 calculate_heterogeneity_scores <- function(gwases_by_ancestry, heterogeneity_score_file) {
-  beta <- lapply(gwases_by_ancestry, \(x) x$BETA) %>% bind_cols
-  se <- lapply(gwases_by_ancestry, \(x) x$SE) %>% bind_cols
+  beta <- lapply(gwases_by_ancestry, \(x) x$BETA) |> bind_cols
+  se <- lapply(gwases_by_ancestry, \(x) x$SE) |> bind_cols
   o <- lapply(seq_len(nrow(beta)), \(i) {
     fixed_effects_meta_analysis(as.numeric(beta[i,]), as.numeric(se[i,]))
   })

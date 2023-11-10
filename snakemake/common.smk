@@ -168,7 +168,7 @@ if not os.getenv("RDFS_DIR"):
 DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
 RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
 RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
-THOUSAND_GENOMES_DIR = format_dir_string(os.getenv('THOUSAND_GENOMES_DIR'))
+THOUSAND_GENOMES_DIR = format_dir_string(os.getenv('GENOMIC_DATA_DIR') + "/1000genomes")
 LDSC_DIR = format_dir_string(os.getenv('LDSC_DIR'))
 QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
 

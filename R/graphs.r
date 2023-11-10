@@ -136,7 +136,7 @@ miami_plot <- function(first_gwas_filename,
       second_gwas <- subset(second_gwas, CHR %in% shared_chrs)
     }
   }
-  print(paste("Number of rows for each GWAS: ", nrow(first_gwas), nrow(second_gwas)))
+  message(paste("Number of rows for each GWAS: ", nrow(first_gwas), nrow(second_gwas)))
 
   png(miami_plot_file, width = png_width, height = png_height)
   par(mfrow = c(2, 1))

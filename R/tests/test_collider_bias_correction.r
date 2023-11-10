@@ -22,6 +22,7 @@ test_that("collider_bias.correct_for_collider_bias works well", {
   expect_true(file.exists(collider_bias_results_file))
   result <- vroom::vroom(collider_bias_results_file)
   expect_equal(nrow(result), 3)
+  expect_true(all(result$BETA >= 1))
 
   expect_true(file.exists(harmonised_results))
   expect_true(file.exists(slopehunter_file))

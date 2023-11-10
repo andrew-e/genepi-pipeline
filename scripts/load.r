@@ -6,8 +6,9 @@ source("../R/collider_bias.r")
 source("../R/graphs.r")
 source("../R/coloc.r")
 source("../R/mr.r")
+source("../R/data_conversions.r")
 
-genome_data_dir <- if (Sys.getenv("THOUSAND_GENOMES_DIR") == "") "/mnt/storage/private/mrcieu/data/1000genomes/" else Sys.getenv("THOUSAND_GENOMES_DIR")
+genomic_data_dir <- if (Sys.getenv("GENOMIC_DATA_DIR") == "") "/mnt/storage/private/mrcieu/data/genomic_data/" else Sys.getenv("GENOMIC_DATA_DIR")
 qtl_top_hits_dir  <- if (Sys.getenv("QTL_TOP_HITS_DIR") == "") "/mnt/storage/private/mrcieu/data/qtl_top_hits/" else Sys.getenv("QTL_TOP_HITS_DIR")
 
 pqtl_top_hits_dir <- paste0(qtl_top_hits_dir, "/pqtl")

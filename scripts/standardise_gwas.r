@@ -24,7 +24,8 @@ parser <- add_argument(parser, "--output_gwas",
 )
 parser <- add_argument(parser, "--populate_rsid",
                        help = "Should GWAS Populate RSID (based on 1000 genomes data)",
-                       flag = T
+                       type = "character",
+                       default = "PARTIAL"
 )
 parser <- add_argument(parser, "--to-output",
                        help = "Flag to format the standardised GWAS into a different output",
@@ -48,7 +49,7 @@ if (!args$to_output) {
     standardise_gwas(input_gwases[i],
                      output_gwases[i],
                      input_format = args$input_format,
-                     populate_rsid = args$populate_rsid,
+                     populate_rsid_option = args$populate_rsid,
                      bespoke_column_map = bespoke_column_map
     )
     gc()

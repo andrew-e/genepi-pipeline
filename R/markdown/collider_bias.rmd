@@ -37,20 +37,21 @@ This is a comparison of all top hits returned from clumped subsequent unadjusted
 clumped_snps <- data.table::fread(params$clumped_subsequent)$SNP
 columns <- c("SNP", "RSID", "BETA", "SE", "P")
 
-subsequent <- vroom::vroom(params$subsequent_gwas, show_col_types = F) %>%
+subsequent <- vroom::vroom(params$subsequent_gwas, show_col_types = F) |>
         subset(RSID %in% clumped_snps, select = columns)
 subsequent$GWAS <- "Subsequent"
 
-incidence <- vroom::vroom(params$incidence_gwas, show_col_types = F) %>%
+incidence <- vroom::vroom(params$incidence_gwas, show_col_types = F) |>
   subset(RSID %in% subsequent$RSID, select = columns)
 incidence$GWAS <- "Incidence"
 
-subsequent_adjusted <- vroom::vroom(params$slopehunter_results, show_col_types = F) %>%
+subsequent_adjusted <- vroom::vroom(params$slopehunter_results, show_col_types = F) |>
   subset(RSID %in% subsequent$RSID, select = columns)
 subsequent_adjusted$GWAS <- "Subsequent Adjusted"
 
-all_clumped <- rbind(incidence, subsequent, subsequent_adjusted) %>%
-  arrange(SNP) %>% select(GWAS, SNP, everything())
+all_clumped <- rbind(incidence, subsequent, subsequent_adjusted) |>
+  arrange(SNP) |>
+  select(GWAS, SNP, everything())
 
 knitr::kable(all_clumped)
 ```
