@@ -175,8 +175,8 @@ plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resut
 #' - Q = vector of p-values for Cochrane's Q statistic for each SNP
 #' - Qj = Data frame of per-population outlier q values for each SNP
 calculate_heterogeneity_scores <- function(gwases_by_ancestry, heterogeneity_score_file) {
-  beta <- lapply(gwases_by_ancestry, \(x) x$BETA) |> bind_cols
-  se <- lapply(gwases_by_ancestry, \(x) x$SE) |> bind_cols
+  beta <- lapply(gwases_by_ancestry, \(x) x$BETA) %>% bind_cols
+  se <- lapply(gwases_by_ancestry, \(x) x$SE) %>% bind_cols
   o <- lapply(seq_len(nrow(beta)), \(i) {
     fixed_effects_meta_analysis(as.numeric(beta[i,]), as.numeric(se[i,]))
   })
