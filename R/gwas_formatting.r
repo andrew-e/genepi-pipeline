@@ -1,13 +1,39 @@
-library(vroom, quietly=T)
 library(tidyr, quietly=T)
 library(dplyr, quietly=T)
 
 column_map <- list(
-  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N", ENSEMBL_ID="ENSEMBL_ID", GENE_ID="GENE_ID"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
+#' harmonise_gwases: takes a list of gwases, get the SNPs in common
+#' across all datasets arranged to be in the same order
+#'
+#' @param: elipses of gwases
+#' @return: list of harmonised gwases
+#'
+harmonise_gwases <- function(...) {
+  gwases <- list(...)
+
+  snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
+  message(paste("Number of shared SNPs after harmonisation:", length(snpids)))
+
+  gwases <- lapply(gwases, function(gwas) {
+    dplyr::filter(gwas, SNP %in% snpids) |>
+        dplyr::arrange(SNP)
+  })
+
+  return(gwases)
+}
+
+#' standardise_gwas: takes an input gwas, changes headers, standardises allelic input, adds RSID, makes life easier
+#' @param file_gwas: filename of gwas to standardise
+#' @param output_file: file to save standardised gwas
+#' @param input_format: type of non-bespoke input format available
+#' @param populate_rsid_option: type of RSID population you want ("NO", "PARTIAL", "FULL"). PARTIAL = 1000 genomes
+#' @param bespoke_column_map: column header map used for renaming
+#' @return nothing: saves new gwas in {output_file}
 standardise_gwas <- function(file_gwas,
                              output_file,
                              input_format="default",
@@ -27,22 +53,10 @@ standardise_gwas <- function(file_gwas,
     standardise_columns() |>
     standardise_alleles() |>
     health_check() |>
-    populate_rsid(populate_rsid_option)
+    populate_rsid(populate_rsid_option) |>
+    populate_gene_ids()
 
   vroom::vroom_write(gwas, output_file)
-}
-
-populate_rsid <- function(option) {
-  if (option == "NO" || column_map$default$RSID %in% colnames(gwas)) {
-    message("Skipping RSID population for GWAS")
-  }
-  else if (option == "FULL") {
-    gwas <- populate_full_rsids(gwas)
-  }
-  else if (option == "PARTIAL") {
-    gwas <- populate_partial_rsids(gwas)
-  }
-  return (gwas)
 }
 
 format_gwas_output <- function(file_gwas, output_file, output_format="default") {
@@ -87,8 +101,6 @@ standardise_columns <- function(gwas) {
   return(gwas)
 }
 
-
-
 health_check <- function(gwas) {
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
     stop("GWAS has some P values outside accepted range")
@@ -101,7 +113,6 @@ health_check <- function(gwas) {
   #}
   return(gwas)
 }
-
 
 #' change_column_names: private function that takes a named list of column names
 #'  and changes the supplied data frame's column names accordingly
@@ -127,7 +138,7 @@ standardise_alleles <- function(gwas) {
   gwas$EA <- toupper(gwas$EA)
   gwas$OA <- toupper(gwas$OA)
 
-  to_flip <- gwas$EA > gwas$OA
+  to_flip <- (gwas$EA > gwas$OA) && (!gwas$EA %in% c("D", "I"))
   gwas$EAF[to_flip] <- 1 - gwas$EAF[to_flip]
   gwas$BETA[to_flip] <- -1 * gwas$BETA[to_flip]
 
@@ -140,42 +151,6 @@ standardise_alleles <- function(gwas) {
 
   return(gwas)
 }
-
-#' harmonise_gwases: takes a list of gwases, get the SNPs in common
-#' across all datasets arranged to be in the same order
-#'
-#' @param: elipses of gwases
-#' @return: list of harmonised gwases
-#'
-harmonise_gwases <- function(...) {
-  gwases <- list(...)
-
-  snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
-  message(paste("Number of shared SNPs after harmonisation:", length(snpids)))
-
-  gwases <- lapply(gwases, function(gwas) {
-    dplyr::filter(gwas, SNP %in% snpids) |>
-    dplyr::arrange(SNP)
-  })
-
-  return(gwases)
-}
-
-populate_snp_from_rsid <- function(gwas) {
-  start <- Sys.time()
-  marker_to_rsid_file <- paste0(thousand_genomes_dir, "marker_to_rsid_full.tsv.gz")
-  marker_to_rsid <- vroom::vroom(marker_to_rsid_file, col_select=c("HG37", "RSID"))
-  message(paste("loaded file: ", Sys.time()-start))
-
-  matching <- match(gwas$RSID, marker_to_rsid$RSID)
-  gwas$CHRBP <- marker_to_rsid$HG37[matching]
-  gwas <- tidyr::separate(data = gwas, col = "CHRBP", into = c("CHR", "BP"), sep = ":")
-  message(paste("mapped and returned: ", Sys.time()-start))
-
-  return(gwas)
-}
-
-
 
 create_bed_file_from_gwas <- function(gwas, output_file) {
   N <- nrow(gwas)

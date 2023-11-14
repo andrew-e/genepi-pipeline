@@ -10,54 +10,63 @@ clump_dir = DATA_DIR + "clumped_snps/"
 if not os.path.isdir(clump_dir):
     os.makedirs(clump_dir)
 
+incident_file_prefix = file_prefix(pipeline.incident.file)
+subsequent_file_prefix = file_prefix(pipeline.subsequent.file)
+
 pipeline.incident.columns = resolve_gwas_columns(pipeline.incident.file, pipeline.incident.columns)
 pipeline.subsequent.columns = resolve_gwas_columns(pipeline.subsequent.file, pipeline.subsequent.columns)
+pipeline.incident.std_file = standardised_gwas_name(pipeline.incident.file)
+pipeline.subsequent.std_file = standardised_gwas_name(pipeline.subsequent.file)
+std_file_pattern = standardised_gwas_name("{prefix}")
 
-standardised_incidence_gwas = standardised_gwas_name(pipeline.incident.file)
-standardised_subsequent_gwas = standardised_gwas_name(pipeline.subsequent.file)
+setattr(pipeline, incident_file_prefix, pipeline.incident)
+setattr(pipeline, subsequent_file_prefix, pipeline.subsequent)
 
-clumped_incidence_prefix = clump_dir + file_prefix(pipeline.incident.file)
+clumped_incidence_prefix = clump_dir + incident_file_prefix
 clumped_incidence = clumped_incidence_prefix + ".clumped"
-clumped_subsequent_prefix = clump_dir + file_prefix(pipeline.subsequent.file)
+clumped_subsequent_prefix = clump_dir + subsequent_file_prefix
 clumped_subsequent = clumped_subsequent_prefix + ".clumped"
 
-collider_bias_results = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent.file) + "_collider_bias_results.tsv"
-harmonised_effects = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent.file) + "_harmonised_effects.tsv.gz"
-slopehunter_results = RESULTS_DIR + "collider_bias/" + file_prefix(pipeline.subsequent.file) + "_slopehunter.tsv.gz"
+collider_bias_results = RESULTS_DIR + "collider_bias/" + subsequent_file_prefix + "_collider_bias_results.tsv"
+harmonised_effects = RESULTS_DIR + "collider_bias/" + subsequent_file_prefix + "_harmonised_effects.tsv.gz"
+slopehunter_results = RESULTS_DIR + "collider_bias/" + subsequent_file_prefix + "_slopehunter.tsv.gz"
 
-unadjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(pipeline.subsequent.file) + "_miami_plot.png"
+unadjusted_miami_plot = RESULTS_DIR + "plots/" + subsequent_file_prefix + "_miami_plot.png"
 slopehunter_adjusted_miami_plot = RESULTS_DIR + "plots/" + file_prefix(slopehunter_results) + "_miami_plot.png"
-results_file = RESULTS_DIR + "collider_bias/result_" + file_prefix(pipeline.incident.file) + "_" + file_prefix(pipeline.subsequent.file) + ".html"
+results_file = RESULTS_DIR + "collider_bias/result_" + incident_file_prefix + "_" + subsequent_file_prefix + ".html"
 expected_vs_observed_results = RESULTS_DIR + "collider_bias/expected_vs_observed_outcomes.tsv"
 expected_vs_observed_variants = RESULTS_DIR + "collider_bias/expected_vs_observed_variants.tsv"
 
 
 rule all:
-    input: collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot, slopehunter_adjusted_miami_plot, expected_vs_observed_results, expected_vs_observed_variants, results_file
+    input: expand(std_file_pattern, prefix=[incident_file_prefix, subsequent_file_prefix]),
+        collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot,
+        slopehunter_adjusted_miami_plot, expected_vs_observed_results, expected_vs_observed_variants, results_file
+
 
 rule standardise_gwases:
     threads: 8
     resources:
-        mem = "16G"
-    input:
-        incidence = pipeline.incident.file,
-        subsequent = pipeline.subsequent.file
-    output:
-        incidence = standardised_incidence_gwas,
-        subsequent = standardised_subsequent_gwas
+        mem = "72G" if pipeline.rsid_map == "FULL" else "16G"
+    params:
+        input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
+        input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).columns,
+    output: std_file_pattern
     shell:
         """
         Rscript standardise_gwas.r \
-            --input_gwas {input.incidence} {input.subsequent} \
-            --input_columns {pipeline.incident.columns}:{pipeline.subsequent.columns} \
-            --output_gwas {output.incidence} {output.subsequent}
+            --input_gwas {params.input_gwas} \
+            --input_columns {params.input_columns} \
+            --output_gwas {output} \
+            --populate_rsid {pipeline.rsid_map} 
         """
+
 
 rule clump_incidence_gwas:
     resources:
         mem = "4G"
     input:
-        gwas = standardised_incidence_gwas
+        gwas = pipeline.incident.std_file
     output:
         clumped_incidence
     shell:
@@ -66,7 +75,7 @@ rule clump_incidence_gwas:
             --clump {input.gwas} \
             --clump-snp-field RSID \
             {pipeline.plink_clump_arguments} \
-            --out {clumped_incidence_prefix} 
+            --out {clumped_incidence_prefix} || echo "{default_clump_headers}" > {output}
         """
 
 #TODO: ensure that this doesn't fail if no hits are found at that p-value
@@ -74,7 +83,7 @@ rule clump_subsequent_gwas:
     resources:
         mem = "4G"
     input:
-        gwas = standardised_subsequent_gwas
+        gwas = pipeline.subsequent.std_file
     output:
         clumped_subsequent
     shell:
@@ -83,7 +92,7 @@ rule clump_subsequent_gwas:
             --clump {input.gwas} \
             --clump-snp-field RSID \
             --clump-p1 0.00000005 \
-            --out {clumped_subsequent_prefix} || echo "{default_clump_headers} > {output}
+            --out {clumped_subsequent_prefix} || echo "{default_clump_headers}" > {output}
         """
 
 rule collider_bias_correction:
@@ -91,8 +100,8 @@ rule collider_bias_correction:
     resources:
         mem = "32G"
     input:
-        incidence_gwas = standardised_incidence_gwas,
-        subsequent_gwas = standardised_subsequent_gwas,
+        incidence_gwas = pipeline.incident.std_file,
+        subsequent_gwas = pipeline.subsequent.std_file,
         clumped_file = clumped_incidence
     output:
         results = collider_bias_results,
@@ -115,8 +124,8 @@ rule unadjusted_miami_plot:
         mem = "8G",
         time = "02:00:00"
     input:
-        first_gwas = standardised_incidence_gwas,
-        second_gwas = standardised_subsequent_gwas
+        first_gwas = pipeline.incident.std_file,
+        second_gwas = pipeline.subsequent.std_file
     output: unadjusted_miami_plot
     shell:
         """
@@ -133,7 +142,7 @@ rule slopehunter_adjusted_miami_plot:
         mem = "8G",
         time = "02:00:00"
     input:
-        first_gwas = standardised_incidence_gwas,
+        first_gwas = pipeline.incident.std_file,
         second_gwas = slopehunter_results
     output: slopehunter_adjusted_miami_plot
     shell:
@@ -149,7 +158,7 @@ rule compare_observed_vs_expected_gwas:
     resources:
         mem = "16G"
     input:
-        gwases = [standardised_incidence_gwas, standardised_subsequent_gwas],
+        gwases = [pipeline.incident.std_file, pipeline.subsequent.std_file],
         clumped_files = [clumped_incidence]
     output:
         results = expected_vs_observed_results,
@@ -164,8 +173,8 @@ rule compare_observed_vs_expected_gwas:
         """
 
 files_created = {
-    "incidence_gwas": standardised_incidence_gwas,
-    "subsequent_gwas": standardised_subsequent_gwas,
+    "incidence_gwas": pipeline.incident.std_file,
+    "subsequent_gwas": pipeline.subsequent.std_file,
     "clumped_snps": clumped_incidence,
     "clumped_subsequent": clumped_subsequent,
     "collider_bias_results": collider_bias_results,

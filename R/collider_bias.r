@@ -90,30 +90,38 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   pruned_harmonised_effects_df <- data.frame(pruned_harmonised_effects)
 
   for (p_value_threshold in p_value_thresholds) {
-    slopehunter_result <- SlopeHunter::hunt(
-      dat = pruned_harmonised_effects_df,
-      snp_col = "SNP",
-      xbeta_col = "BETA.incidence",
-      xse_col = "SE.incidence",
-      xp_col = "PVAL.incidence",
-      ybeta_col = "BETA.prognosis",
-      yse_col = "SE.prognosis",
-      yp_col = "PVAL.prognosis",
-      xp_thresh = p_value_threshold
-    )
+    tryCatch(
+      expr = {
+        slopehunter_result <- SlopeHunter::hunt(
+            dat = pruned_harmonised_effects_df,
+            snp_col = "SNP",
+            xbeta_col = "BETA.incidence",
+            xse_col = "SE.incidence",
+            xp_col = "PVAL.incidence",
+            ybeta_col = "BETA.prognosis",
+            yse_col = "SE.prognosis",
+            yp_col = "PVAL.prognosis",
+            xp_thresh = p_value_threshold
+        )
 
-    slopehunter_beta <- slopehunter_result$b
-    slopehunter_se <- slopehunter_result$bse
-    fit <- slopehunter_result$Fit
+        slopehunter_beta <- slopehunter_result$b
+        slopehunter_se <- slopehunter_result$bse
+        fit <- slopehunter_result$Fit
 
-    collider_bias_results <- dplyr::add_row(collider_bias_results,
-      METHOD = collider_bias_type$slopehunter,
-      P_VALUE_THRESHOLD = p_value_threshold,
-      SNPS_USED = table(fit$clusters)[1],
-      BETA = slopehunter_beta,
-      SE = slopehunter_se,
-      ENTROPY = slopehunter_result$entropy,
-      PLEIOTROPIC = table(fit$clusters)[2]
+        collider_bias_results <- dplyr::add_row(collider_bias_results,
+                                                METHOD = collider_bias_type$slopehunter,
+                                                P_VALUE_THRESHOLD = p_value_threshold,
+                                                SNPS_USED = table(fit$clusters)[1],
+                                                BETA = slopehunter_beta,
+                                                SE = slopehunter_se,
+                                                ENTROPY = slopehunter_result$entropy,
+                                                PLEIOTROPIC = table(fit$clusters)[2]
+        )
+      },
+      error = function(e){
+        message(paste("Couldn't run SlopeHunter::hunt for p-val theshold", p_value_threshold, ", skipping"))
+        message(e)
+      }
     )
   }
 
@@ -246,7 +254,8 @@ adjust_gwas_data_from_weights_and_save <- function(gwas,
 
   gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
   gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%
-    dplyr::rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
+    dplyr::rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p) %>%
+    convert_beta_to_or()
 
   vroom::vroom_write(gwas, output_file)
 }

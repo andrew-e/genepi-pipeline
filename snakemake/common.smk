@@ -6,23 +6,8 @@ import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
-from dotenv import load_dotenv
 from types import SimpleNamespace
-
-load_dotenv()
-user = os.getenv('USER')
-slurm_log_directory = f"/user/work/{user}/slurm_logs/"
-docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
-default_clump_headers = "CHR F SNP BP P TOTAL NSIG S05 S01 S001 S0001 SP2"
-
-default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N")
-default_mandatory_columns = ["CHR", "BP", "P", "EA", "OA", "EAF"]
-
-beta_and_or_options = [
-    ["BETA", "SE"],
-    ["OR", "OR_LB", "OR_UB"],
-    ["OR", "OR_SE"]
-]
+include: "constants.smk"
 
 def read_json_into_object(json_file):
     if not os.path.isfile(".env"):
@@ -32,6 +17,12 @@ def read_json_into_object(json_file):
 
     with open(json_file) as pipeline_input:
         pipeline = json.load(pipeline_input,object_hook=lambda data: SimpleNamespace(**data))
+
+    if not hasattr(pipeline, "rsid_map"):
+        setattr(pipeline, "rsid_map", "PARTIAL")
+    elif hasattr(pipeline, "rsid_map") and pipeline.rsid_map not in rsid_map_options:
+        raise ValueError(f"Error: {pipeline.rsid_map} is not one of the valid options: {rsid_map_options}")
+
     return pipeline
 
 
@@ -70,7 +61,10 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
         raise ValueError(f"""Error: {gwas_file} doesn't contain the correct pairings for BETA or OR.
             The options available are: (BETA, SE), (OR, OR_SE), or (OR, OR_LB, OR_UB)""")
 
-    return turn_dict_into_cli_string(column_name_map)
+    cli_string = turn_dict_into_cli_string(column_name_map)
+    column_map_file = DATA_DIR + "gwas/" + file_prefix(gwas_file) + "_column_map.txt"
+    with open(column_map_file, "w") as text_file:
+        text_file.write(cli_string)
 
 
 def validate_ancestries(ancestries):
@@ -82,9 +76,14 @@ def validate_ancestries(ancestries):
 def standardised_gwas_name(gwas_name):
     if gwas_name.endswith("_std.tsv.gz"):
         return gwas_name
+    elif gwas_name.startswith("{") and gwas_name.endswith("}"):
+        return DATA_DIR + "gwas/" + gwas_name + "_std.tsv.gz"
     else:
         return DATA_DIR + "gwas/" + file_prefix(gwas_name) + "_std.tsv.gz"
 
+def expanded_gwas_list(gwas_files):
+    prefixes = [file_prefix(gwas_file) for gwas_file in gwas_files]
+    return expand(DATA_DIR + "gwas/{file_prexix}_std.tsv.gz", file_prefix = prefixes)
 
 def cleanup_old_slurm_logs():
     if not os.path.isdir(slurm_log_directory): return
@@ -112,11 +111,6 @@ def file_prefix(filename):
     prefix = stem.split('.')[0]
     prefix = re.sub("_std", "", prefix)
     return prefix
-
-
-def format_dir_string(directory):
-    if not directory: return None
-    return directory + "/" if not directory.endswith('/') else directory
 
 
 def turn_dict_into_cli_string(results_dict):
@@ -159,20 +153,5 @@ def onerror_message():
     print("There was an error in the pipeline, please check the last written slurm log to see the error:")
     print(slurm_log_directory + last_log)
 
-
-if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
-    raise ValueError("Please populate DATA_DIR and RESULTS_DIR in the .env file provided")
-if not os.getenv("RDFS_DIR"):
-    print("Please populate RDFS_DIR in .env if you want the generated files to be automatically copied to RDFS")
-
-DATA_DIR = format_dir_string(os.getenv('DATA_DIR'))
-RESULTS_DIR = format_dir_string(os.getenv('RESULTS_DIR'))
-RDFS_DIR = format_dir_string(os.getenv('RDFS_DIR'))
-THOUSAND_GENOMES_DIR = format_dir_string(os.getenv('GENOMIC_DATA_DIR') + "/1000genomes")
-LDSC_DIR = format_dir_string(os.getenv('LDSC_DIR'))
-QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
-
-if RDFS_DIR and not RDFS_DIR.endswith("working/"):
-    raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")
 
 cleanup_old_slurm_logs()

@@ -21,7 +21,7 @@ perform_mr_on_pqtl_datasets <- function(gwas_filename, results_output, subcatego
 }
 
 run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposures=c()) {
-  all_pqtl_mr_results <- lapply(qtl_files, function(qtl_file) {
+  all_qtl_mr_results <- lapply(qtl_files, function(qtl_file) {
     qtl_exposure <- TwoSampleMR::read_exposure_data(qtl_file,
                                                     snp_col="SNP",
                                                     effect_allele_col="EA",
@@ -35,7 +35,7 @@ run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposur
     )
 
     #Don't need to clump because the qtl data sets are already only top hits
-    #qtl_exposure <- TwoSampleMR::clump_data(pqtl_exposure, pop=ancestry)
+    #qtl_exposure <- TwoSampleMR::clump_data(qtl_exposure, pop=ancestry)
 
     gwas_outcome_data <- TwoSampleMR::read_outcome_data(gwas_filename,
                                                         snp_col = "SNP",
@@ -61,11 +61,13 @@ run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposur
     qtl_dataset <- vroom::vroom(qtl_file)
     matching <- match(mr_results$exposure, qtl_dataset$EXPOSURE)
     mr_results$SNP <- qtl_dataset$SNP[matching]
+    mr_results <- calculate_f_statistic(mr_results)
 
     return(mr_results)
   }) %>% dplyr::bind_rows()
 
-  vroom::vroom_write(all_pqtl_mr_results, results_output)
+
+  vroom::vroom_write(all_qtl_mr_results, results_output)
 }
 
 #'

@@ -7,7 +7,6 @@ cluster:
     --account=$ACCOUNT_ID
     --nodes={resources.nodes}
     --ntasks-per-node={resources.ntasks_per_node}
-    --cpus-per-task={resources.ntasks_per_node}
     --time={resources.time}
     --cpus-per-task={threads}
     --mem={resources.mem}

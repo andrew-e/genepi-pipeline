@@ -4,22 +4,24 @@ singularity: docker_container
 pipeline = read_json_into_object("input.json")
 
 onstart:
-    print("##### GWAS Ancestry Comparison Pipeline #####")
-
-
-for gwas in pipeline.gwases:
-    gwas.columns = resolve_gwas_columns(gwas.file, gwas.columns)
-validate_ancestries([g.ancestry for g in pipeline.gwases])
-
+    print("##### GWAS Comparison Pipeline #####")
 
 clump_dir = DATA_DIR + "clumped_snps/"
 if not os.path.isdir(clump_dir):
     os.makedirs(clump_dir)
 
 for g in pipeline.gwases:
+    g.prefix = file_prefix(g.file)
+    g.columns = resolve_gwas_columns(gwas.file, gwas.columns)
     g.standardised_gwas = standardised_gwas_name(g.file)
     g.clumped_snp_prefix = clump_dir + file_prefix(g.file)
     g.clumped_snps = g.clumped_snp_prefix + ".clumped"
+    setattr(pipeline, g.prefix, g)
+
+ancestries = list([g.ancestry for g in pipeline.gwases])
+validate_ancestries(ancestries)
+std_file_pattern = standardised_gwas_name("{prefix}")
+
 
 #List of output files
 expected_vs_observed_results = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_outcomes.tsv"
@@ -30,26 +32,28 @@ heterogeneity_snp_comparison = RESULTS_DIR + "plots/ancestry_heterogeneity_snp_c
 results_file = RESULTS_DIR + "ancestry_comparison/result_summary.html"
 
 
-ancestries = list([g.ancestry for g in pipeline.gwases])
-clumped_snp_prefixes = list([g.clumped_snp_prefix for g in pipeline.gwases])
-
 rule all:
-    input: expected_vs_observed_results, expected_vs_observed_variants, heterogeneity_scores, heterogeneity_plot, heterogeneity_snp_comparison, results_file
+    input: expand(std_file_pattern, [g.prefix for g in pipeline.gwases]), expected_vs_observed_results,
+        expected_vs_observed_variants, heterogeneity_scores, heterogeneity_plot, heterogeneity_snp_comparison, results_file
 
-input_columns = ":".join([g.columns for g in pipeline.gwases])
+
 rule standardise_gwases:
-    threads: 4
+    threads: 8
     resources:
-        mem = f"{len(pipeline.gwases)*5}G"
-    input: [g.file for g in pipeline.gwases]
-    output: [g.standardised_gwas for g in pipeline.gwases]
+        mem = "72G" if pipeline.rsid_map == "FULL" else "16G"
+    params:
+        input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
+        input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).columns,
+    output: std_file_pattern
     shell:
         """
         Rscript standardise_gwas.r \
-            --input_gwas {input} \
+            --input_gwas {params.input_gwas} \
+            --input_columns {params.input_columns} \
             --output_gwas {output} \
-            --input_columns {input_columns}
+            --populate_rsid {pipeline.rsid_map} 
         """
+
 
 rule find_clumped_snps:
     resources:
@@ -57,11 +61,13 @@ rule find_clumped_snps:
     input:
         gwases = [g.standardised_gwas for g in pipeline.gwases]
     output: [g.clumped_snps for g in pipeline.gwases]
+    params:
+        clumped_snp_prefixes = list([g.clumped_snp_prefix for g in pipeline.gwases])
     shell:
         """
         gwases=({input.gwases})
         ancestries=({ancestries})
-        clumped_snp_prefixes=({clumped_snp_prefixes})
+        clumped_snp_prefixes=({params.clumped_snp_prefixes})
 
         for i in "${{!gwases[@]}}"
         do
@@ -93,6 +99,7 @@ rule compare_observed_vs_expected_gwas:
             --variants_output {output.variants}
         """
 
+
 rule heterogeneity_between_ancestries:
     resources:
         mem = f"{len(pipeline.gwases)*10}G"
@@ -122,6 +129,7 @@ files_created = {
     "heterogeneity_snp_comparison": heterogeneity_snp_comparison
 }
 results_string = turn_dict_into_cli_string(files_created)
+
 
 rule create_results_file:
     threads: 4

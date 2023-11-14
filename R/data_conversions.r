@@ -39,14 +39,46 @@ calculate_f_statistic <- function(gwas) {
   return(gwas)
 }
 
-ensembl_to_gene <- function(ensembl_ids) {
-  library(EnsDb.Hsapiens.v79, lib.loc=paste0(genomic_data_dir, "ensembl/"))
-  gene_ids <- ensembldb::select(EnsDb.Hsapiens.v79, keys = ensembl_ids, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
+populate_gene_ids <- function(gwas) {
+  if ("ENSEMBL_ID" %in% colnames(gwas) && !"GENE_ID" %in% colnames(gwas)) {
+    ensembl_to_gene()
+  }
+  else if ("GENE_ID" %in% colnames(gwas) && !"ENSEMBL_ID" %in% colnames(gwas)) {
+    gene_to_ensembl()
+  }
 }
 
-gene_to_ensembl <- function(gene_ids) {
+ensembl_to_gene <- function(gwas) {
   library(EnsDb.Hsapiens.v79, lib.loc=paste0(genomic_data_dir, "ensembl/"))
-  ensembl_ids <- ensembldb::select(EnsDb.Hsapiens.v79, keys = gene_ids, keytype = "SYMBOL", columns = c("SYMBOL","GENEID"))
+  gwas <- ensembldb::select(EnsDb.Hsapiens.v79, keys = gwas$ENSEMBL_ID, keytype = "GENEID", columns = c("SYMBOL","GENEID")) |>
+      dplyr::rename(GENE_ID = "GENEID", ENSEMBL_ID = "SYMBOL") |>
+      dplyr::merge(gwas, by="ENSEMBL_ID")
+  return(gwas)
+}
+
+gene_to_ensembl <- function(gwas) {
+  library(EnsDb.Hsapiens.v79, lib.loc=paste0(genomic_data_dir, "ensembl/"))
+  gwas <- ensembldb::select(EnsDb.Hsapiens.v79, keys = gwas$GENE_ID, keytype = "SYMBOL", columns = c("SYMBOL","GENEID")) |>
+      dplyr::rename(GENE_ID = "GENEID", ENSEMBL_ID = "SYMBOL") |>
+      dplyr::merge(gwas, by="ENSEMBL_ID")
+  return(gwas)
+}
+
+populate_rsid <- function(gwas, option) {
+  message("Start Time:")
+  message(Sys.time())
+  if (option == "NO" || column_map$default$RSID %in% colnames(gwas)) {
+    message("Skipping RSID population for GWAS")
+  }
+  else if (option == "FULL") {
+    gwas <- populate_full_rsids(gwas)
+  }
+  else if (option == "PARTIAL") {
+    gwas <- populate_partial_rsids(gwas)
+  }
+  message("Time taken:")
+  message(Sys.time())
+  return (gwas)
 }
 
 populate_partial_rsids <- function(gwas) {
@@ -59,8 +91,11 @@ populate_partial_rsids <- function(gwas) {
 }
 
 populate_full_rsids <- function(gwas, build="b37_dbsnp156") {
-  message("populating full RSID list based on genepi.utils::chrpos_to_rsid...")
+  gc()
+  gwas <- data.table::as.data.table(gwas)
   dbsnp_dir <- paste0(genomic_data_dir, "dbsnp")
-  gwas <- genepi.utils::chrpos_to_rsid(gwas, "CHR", "BP", "EA", "OA", dbsnp_dir=dbsnp_dir, build=build)
+  future::plan(future::multisession, workers = number_of_cpus_available)
+  gwas <- genepi.utils::chrpos_to_rsid(gwas, "CHR", "BP", "EA", "OA", flip = "allow", dbsnp_dir=dbsnp_dir, build=build, alt_rsids = F)
+  gwas <- tibble::as_tibble(gwas)
   return(gwas)
 }

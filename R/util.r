@@ -18,6 +18,15 @@ split_string_into_named_list <- function(input_string) {
   return(structure(as.list(values), names=names))
 }
 
+get_env_var <- function(env_var_name, default_value) {
+  if (Sys.getenv(env_var_name) == "") {
+    return(default_value)
+  }
+  else {
+    return(Sys.getenv(env_var_name))
+  }
+}
+
 #' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
 #' this is much faster way of doing it (I think?)
 #'

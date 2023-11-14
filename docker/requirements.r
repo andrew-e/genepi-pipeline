@@ -15,4 +15,5 @@ devtools::install_github(c("Osmahmoud/SlopeHunter",
                            "yixuan/prettydoc")
 )
 
-BiocManager::install(c("GENESIS", "ensembldb"))
+
+BiocManager::install("GENESIS")

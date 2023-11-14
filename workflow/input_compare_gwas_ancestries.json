@@ -26,5 +26,6 @@
       "ancestry": "SAS"
     }
   ],
-  "plink_clump_arguments": "--clump-p1 0.00000005"
+  "plink_clump_arguments": "--clump-p1 0.00000005",
+  "rsid_map": "FULL"
 }
