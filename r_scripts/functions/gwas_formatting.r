@@ -97,10 +97,10 @@ convert_or_to_beta <- function(gwas) {
 
 health_check <- function(gwas) {
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
-    stop("GWAS has some P values outside accepted range")
+    warning("GWAS has some P values outside accepted range")
   }
   if (nrow(gwas[gwas$EAF < 0 | gwas$EAF > 1, ]) > 0) {
-    stop("GWAS has some EAF values outside accepted range")
+    warning("GWAS has some EAF values outside accepted range")
   }
   #if ("OR" %in% colnames(gwas) & nrow(gwas[gwas$OR < 0, ]) > 0) {
   #  stop("GWAS has some OR values outside accepted range")
