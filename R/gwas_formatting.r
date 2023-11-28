@@ -153,17 +153,17 @@ standardise_alleles <- function(gwas) {
 }
 
 create_bed_file_from_gwas <- function(gwas, output_file) {
-  N <- nrow(gwas)
-  bed_file <- data.frame(CHR = character(N),
-    BP1 = numeric(N),
-    BP2 = numeric(N)
-  )
-
   split <- tidyr::separate(data = gwas, col = "SNP", into = c("CHR", "BP1"), sep = "[:_]", remove = T)
-
+  bed_file <- tibble::tibble(
+    CHR = paste0("chr", split$CHR),
+    BP1 = split$BP1,
+    BP2 = split$BP2
+  )
   bed_file$CHR <- paste0("chr", split$CHR)
   bed_file$BP1 <- split$BP1
   bed_file$BP2 <- split$BP1
+
+  if(missing(output_file)) return(bed_file)
 
   vroom::vroom_write(bed_file, output_file, col_names=F)
 }

@@ -160,7 +160,7 @@ miami_plot <- function(first_gwas_filename,
   dev.off()
 }
 
-volcano_plot <- function(results_file, title="Volcano Plot of Results", label="exposure", num_labels = 30, output_file) {
+volcano_plot <- function(results_file, title="Volcano Plot of Results", label="exposure", num_labels=30, output_file) {
   table <- vroom::vroom(results_file)
 
   if (!all(c("BETA", "P") %in% names(table))) {
@@ -175,7 +175,8 @@ volcano_plot <- function(results_file, title="Volcano Plot of Results", label="e
   table <- table[!(abs(table$BETA) > 1 & table$P > 0.05), ]
 
   #filter label to only showing the more 'important' labels
-  most_interesting_labels <- head(table[order(-log10(table$P) * abs(table$BETA), decreasing = T) & table$P < 0.05, ], num_labels)[[label]]
+  most_interesting_labels <- head(table[order(-log10(table$P) * abs(table$BETA), decreasing = T), ], num_labels)[[label]]
+  print(most_interesting_labels)
   table[[label]] <- ifelse(table[[label]] %in% most_interesting_labels, table[[label]], NA)
 
   ggplot2::ggplot(data = table, ggplot2::aes(x = BETA , y = -log10(P), col = category, label = .data[[label]])) +

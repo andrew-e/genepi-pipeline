@@ -1,3 +1,49 @@
+get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
+  if (is.data.frame(input)) {
+    input <- dplyr::select(input, `if`(is.null(columns), dplyr::everything(), columns)) |>
+        subset(`if`(is.null(snps), T, SNP %in% snps))
+  }
+  else {
+    if (!file.exists(input)) stop(paste("Error:", input, "can't be found"))
+    if (!is.null(snps)) {
+      input <- vroom_snps(input, snps) |>
+          dplyr::select(`if`(is.null(columns), dplyr::everything(), columns))
+    }
+    else {
+      input <- vroom::vroom(input, col_select = columns)
+    }
+    input <- subset(input, `if`(is.null(snps), T, SNP %in% snps))
+  }
+  return(input)
+}
+
+#' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
+#' this is much faster way of doing it (I think?)
+#'
+#' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
+vroom_snps <- function(gwas_file, snps=c()){
+  snps <- paste(snps, collapse="\t|")
+
+  if (endsWith(gwas_file, ".gz")) {
+    if (Sys.info()["sysname"] == "Darwin") {
+      grep_command <- paste0("zcat < ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+    } else {
+      grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
+    }
+  }
+  else {
+    grep_command <- paste0("head -n 1", gwas_file, " && rg -I '", snps, "' ", gwas_file)
+  }
+
+  snps_in_gwas <- vroom::vroom(pipe(grep_command))
+  return(snps_in_gwas)
+}
+
+gwas_region <- function(gwas, chr, bp, range = 500000) {
+  return(subset(gwas, CHR == chr & BP > (bp - floor(range/2)) & BP < (bp + floor(range/2))))
+}
+
+
 split_string_into_vector <- function(input_string) {
   return(unlist(strsplit(input_string, '[ ]')))
 }
@@ -25,32 +71,6 @@ get_env_var <- function(env_var_name, default_value) {
   else {
     return(Sys.getenv(env_var_name))
   }
-}
-
-#' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
-#' this is much faster way of doing it (I think?)
-#'
-#' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
-vroom_snps <- function(gwas_file, snps=c()){
-  snps <- paste(snps, collapse="\t|")
-
-  if (endsWith(gwas_file, ".gz")) {
-    if (Sys.info()["sysname"] == "Darwin") {
-      grep_command <- paste0("zcat < ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
-    } else {
-      grep_command <- paste0("zcat ", gwas_file, " | head -n 1 && rg -Iz '", snps, "' ", gwas_file)
-    }
-  }
-  else {
-    grep_command <- paste0("head -n 1", gwas_file, " && rg -I '", snps, "' ", gwas_file)
-  }
-
-  snps_in_gwas <- vroom::vroom(pipe(grep_command))
-  return(snps_in_gwas)
-}
-
-gwas_region <- function(gwas, chr, bp, range = 250000) {
-  return(subset(gwas, CHR == chr & BP > (bp - floor(range/2)) & BP < (bp + floor(range/2))))
 }
 
 file_prefix <- function(file_path) {
@@ -120,4 +140,19 @@ rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
 
   sqlite_command <- paste("sqlite3", dbsnp.hg37, sqlite_query)
   output <- system(sqlite_command, intern = TRUE)
+}
+
+create_bed_file_from_gwas <- function(gwas_file, output_file, marker_column="SNP") {
+  gwas <- vroom::vroom(gwas_file)
+  N <- nrow(gwas)
+  bed_file <- data.frame(CHR = character(N), BP1 = numeric(N), BP2 = numeric(N))
+
+  split <- tidyr::separate(data = gwas, col = marker_column, into = c("CHR", "BP1"), sep = "[:_]")
+  bed_file$CHR <- paste0("chr", split$CHR)
+  bed_file$BP1 <- split$BP1
+  bed_file$BP2 <- split$BP1
+
+  if(missing(output_file)) return(bed_file)
+
+  vroom::vroom_write(bed_file, output_file)
 }

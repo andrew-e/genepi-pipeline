@@ -1,3 +1,37 @@
+run_coloc_on_list_of_datasets <- function(first_gwas_list=list(),
+                                          second_gwas_list=list(),
+                                          exposure_name_list=list(),
+                                          chr_list=list(),
+                                          bp_list=list(),
+                                          range=500000,
+                                          output_file) {
+  input_lengths <- c(length(first_gwas_list), length(second_gwas_list), length(chr_list), length(bp_list))
+  if (var(input_lengths) != 0) {
+    stop("Error: Input lengths are not equal")
+  }
+
+  data_for_coloc <- tibble::tibble(
+      first_gwas = first_gwas_list,
+      second_gwas = second_gwas_list,
+      chr = chr_list,
+      bp = bp_list,
+      exposure_name = exposure_name_list
+  )
+
+  coloc_results <- apply(data_for_coloc,1, function(row) {
+    coloc_columns <- c("SNP", "CHR", "BP", "P", "SE", "N", "EAF")
+    first_gwas <- get_file_or_dataframe(row[['first_gwas']], columns = coloc_columns)
+    second_gwas <- get_file_or_dataframe(row[['second_gwas']], columns = coloc_columns)
+
+    coloc_analysis(first_gwas, second_gwas, row[['exposure_name']], as.numeric(row[['chr']]), as.numeric(row[['bp']]), range)
+  }) |> dplyr::bind_rows()
+
+  if (!missing(output_file)) {
+    vroom::vroom_write(coloc_results, output_file)
+  }
+  return(coloc_results)
+}
+
 run_coloc_on_qtl_mr_results <- function(mr_results_file,
                                         gwas_file,
                                         qtl_dataset,
@@ -10,8 +44,7 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
   mr_results <- vroom::vroom(mr_results_file)
   if (length(exposures) > 0) {
     mr_results <- subset(mr_results, exposure %in% exposures)
-  }
-  else {
+  } else {
     mr_results <- head(mr_results[order(mr_results$p.adjusted), ], 10)
   }
   mr_results <- tidyr::separate(data = mr_results, col = "SNP", into = c("CHR", "BP"), sep = "[:_]", remove = F)
