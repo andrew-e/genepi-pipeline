@@ -47,7 +47,7 @@ standardise_gwas <- function(file_gwas,
   #TODO: if we need to add bespoke input format wrangling here, we can
   gwas_columns <- if(!is.null(bespoke_column_map)) bespoke_column_map else column_map[[input_format]]
 
-  gwas <- vroom::vroom(file_gwas) |>
+  gwas <- get_file_or_dataframe(file_gwas) |>
     change_column_names(gwas_columns) |>
     filter_incomplete_rows() |>
     standardise_columns() |>
@@ -56,7 +56,10 @@ standardise_gwas <- function(file_gwas,
     populate_rsid(populate_rsid_option) |>
     populate_gene_ids()
 
-  vroom::vroom_write(gwas, output_file)
+  #if (missing(output_file) || is.null(output_file) || is.na(output_file)) {
+    vroom::vroom_write(gwas, output_file)
+  #}
+  return(gwas)
 }
 
 format_gwas_output <- function(file_gwas, output_file, output_format="default") {
@@ -138,13 +141,15 @@ standardise_alleles <- function(gwas) {
   gwas$EA <- toupper(gwas$EA)
   gwas$OA <- toupper(gwas$OA)
 
-  to_flip <- (gwas$EA > gwas$OA) && (!gwas$EA %in% c("D", "I"))
-  gwas$EAF[to_flip] <- 1 - gwas$EAF[to_flip]
-  gwas$BETA[to_flip] <- -1 * gwas$BETA[to_flip]
+  to_flip <- (gwas$EA > gwas$OA) & (!gwas$EA %in% c("D", "I"))
+  if (any(to_flip)) {
+    gwas$EAF[to_flip] <- 1 - gwas$EAF[to_flip]
+    gwas$BETA[to_flip] <- -1 * gwas$BETA[to_flip]
 
-  temp <- gwas$OA[to_flip]
-  gwas$OA[to_flip] <- gwas$EA[to_flip]
-  gwas$EA[to_flip] <- temp
+    temp <- gwas$OA[to_flip]
+    gwas$OA[to_flip] <- gwas$EA[to_flip]
+    gwas$EA[to_flip] <- temp
+  }
 
   gwas$SNP <- toupper(paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA))
   gwas <- dplyr::select(gwas, SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, dplyr::everything())

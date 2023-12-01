@@ -1,16 +1,20 @@
 get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
   if (is.data.frame(input)) {
-    input <- dplyr::select(input, `if`(is.null(columns), dplyr::everything(), columns)) |>
+    input <- dplyr::select(input, `if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns))) |>
         subset(`if`(is.null(snps), T, SNP %in% snps))
   }
   else {
     if (!file.exists(input)) stop(paste("Error:", input, "can't be found"))
     if (!is.null(snps)) {
       input <- vroom_snps(input, snps) |>
-          dplyr::select(`if`(is.null(columns), dplyr::everything(), columns))
+          dplyr::select(`if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns)))
     }
     else {
-      input <- vroom::vroom(input, col_select = columns)
+      if (is.null(columns)) {
+        input <- vroom::vroom(input)
+      } else {
+        input <- vroom::vroom(input, dplyr::all_of(columns))
+      }
     }
     input <- subset(input, `if`(is.null(snps), T, SNP %in% snps))
   }

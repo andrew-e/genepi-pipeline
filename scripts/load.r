@@ -7,6 +7,7 @@ source("../R/graphs.r")
 source("../R/coloc.r")
 source("../R/mr.r")
 source("../R/data_conversions.r")
+source("../R/liftover.r")
 
 number_of_cpus_available <- as.numeric(get_env_var("SLURM_CPUS_ON_NODE", 1))
 genomic_data_dir <- get_env_var("GENOMIC_DATA_DIR", "/mnt/storage/private/mrcieu/data/genomic_data/")

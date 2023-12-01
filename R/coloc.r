@@ -4,10 +4,12 @@ run_coloc_on_list_of_datasets <- function(first_gwas_list=list(),
                                           chr_list=list(),
                                           bp_list=list(),
                                           range=500000,
+                                          default_n=NA,
                                           output_file) {
   input_lengths <- c(length(first_gwas_list), length(second_gwas_list), length(chr_list), length(bp_list))
   if (var(input_lengths) != 0) {
     stop("Error: Input lengths are not equal")
+      
   }
 
   data_for_coloc <- tibble::tibble(
@@ -23,7 +25,7 @@ run_coloc_on_list_of_datasets <- function(first_gwas_list=list(),
     first_gwas <- get_file_or_dataframe(row[['first_gwas']], columns = coloc_columns)
     second_gwas <- get_file_or_dataframe(row[['second_gwas']], columns = coloc_columns)
 
-    coloc_analysis(first_gwas, second_gwas, row[['exposure_name']], as.numeric(row[['chr']]), as.numeric(row[['bp']]), range)
+    coloc_analysis(first_gwas, second_gwas, row[['exposure_name']], as.numeric(row[['chr']]), as.numeric(row[['bp']]), range, default_n=default_n)
   }) |> dplyr::bind_rows()
 
   if (!missing(output_file)) {
@@ -36,6 +38,7 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
                                         gwas_file,
                                         qtl_dataset,
                                         exposures=c(),
+                                        default_n=NA,
                                         output_file) {
   coloc_columns <- c("SNP", "CHR", "BP", "P", "SE", "N", "EAF")
   gwas <- vroom::vroom(gwas_file, col_select = coloc_columns) |> subset(EAF > 0 & EAF < 1)
@@ -67,7 +70,7 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
       stop("Error: qtl dataset not supported for coloc right now")
     }
 
-    result <- coloc_analysis(gwas, qtl_chr_gwas, mr_result[["exposure"]], chr, bp, range)
+    result <- coloc_analysis(gwas, qtl_chr_gwas, mr_result[["exposure"]], chr, bp, range, default_n=default_n)
 
     miami_filename <- paste0("scratch/results/plots/mr_metabrain_coloc_", file_prefix(gwas_file), "_", mr_result[["exposure"]], ".png")
     miami_plot(qtl_gwas_file, gwas_file, miami_filename, paste0("Miami Plot of", mr_result[["exposure"]]), chr, bp, range)
@@ -82,26 +85,31 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
 #' @param first_gwas: first gwas to be run through coloc.  This is the gwas that results will be based off
 #' @param second_gwas: second gwas to be run through coloc
 #' @returns
-coloc_analysis <- function(first_gwas, second_gwas, exposure_name, chr=NA, bp=NA, range=NA) {
-  library(dplyr, quietly=T)
-  library(coloc, quietly=T)
+coloc_analysis <- function(first_gwas, second_gwas, exposure_name, chr=NA, bp=NA, range=NA, default_n=NA) {
+    
 
   if (!is.na(chr) & !is.na(bp) & !is.na(range)) {
     first_gwas <- gwas_region(first_gwas, chr, bp, range)
     second_gwas <- gwas_region(second_gwas, chr, bp, range)
   }
+  numeric_columns <- c("P", "SE", "EAF")
+  first_gwas[,numeric_columns] <- lapply(first_gwas[,numeric_columns,drop=FALSE], as.numeric)
+  second_gwas[,numeric_columns] <- lapply(second_gwas[,numeric_columns,drop=FALSE], as.numeric)
 
   harmonised_gwases <- harmonise_gwases(first_gwas, second_gwas)
   first_gwas <- harmonised_gwases[[1]]
   second_gwas <- harmonised_gwases[[2]]
 
-  if (!("N" %in% colnames(first_gwas)) | !("N" %in% colnames(second_gwas))) {
-    stop("GWASes must contain column N (sample size) to complete coloc analysis")
+  first_n <- `if`("N" %in% colnames(first_gwas) && !is.na(as.numeric(first_gwas$N[1])), as.numeric(first_gwas$N[1]), default_n)
+  second_n <- `if`("N" %in% colnames(second_gwas) && !is.na(as.numeric(second_gwas$N[1])), as.numeric(second_gwas$N[1]), default_n)
+
+  if (is.na(first_n) || is.na(second_n)) {
+    stop("Error: N (sample size) must be present to complete coloc analysis.  Please include N in gwas or populate default_n param")
   }
 
   first_coloc_dataset <- list(
     pvalues = first_gwas$P,
-    N = first_gwas$N[1],
+    N = first_n,
     varbeta = first_gwas$SE^2,
     type = "quant",
     snp = first_gwas$SNP,
@@ -110,7 +118,7 @@ coloc_analysis <- function(first_gwas, second_gwas, exposure_name, chr=NA, bp=NA
 
   second_coloc_dataset <- list(
     pvalues = second_gwas$P,
-    N = second_gwas$N[1],
+    N = second_n,
     varbeta = second_gwas$SE^2,
     type = "quant",
     snp = second_gwas$SNP,

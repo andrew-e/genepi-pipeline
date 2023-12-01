@@ -161,7 +161,7 @@ miami_plot <- function(first_gwas_filename,
 }
 
 volcano_plot <- function(results_file, title="Volcano Plot of Results", label="exposure", num_labels=30, output_file) {
-  table <- vroom::vroom(results_file)
+  table <- get_file_or_dataframe(results_file)
 
   if (!all(c("BETA", "P") %in% names(table))) {
     stop("data frame needs to have BETA and P columns")

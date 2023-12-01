@@ -13,4 +13,4 @@
 module add apps/singularity/3.8.3
 USER=$(whoami)
 
-singularity run -B /user/work/$USER -B /user/home/$USER -pwd /home/scripts/ docker://andrewrrelmore/genepi_pipeline:latest $SCRIPT
+singularity run -B $(pwd)/R:/home/R -B $(pwd)/scripts:/home/scripts -B /user/work/$(whoami) -B /user/home/$(whoami) -B /mnt/storage/private/mrcieu/data/ --env-file .env --pwd /home/scripts docker://andrewrrelmore/genepi_pipeline:refactor $SCRIPT

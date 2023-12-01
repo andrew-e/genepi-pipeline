@@ -41,11 +41,12 @@ calculate_f_statistic <- function(gwas) {
 
 populate_gene_ids <- function(gwas) {
   if ("ENSEMBL_ID" %in% colnames(gwas) && !"GENE_ID" %in% colnames(gwas)) {
-    ensembl_to_gene()
+    return(ensembl_to_gene())
   }
   else if ("GENE_ID" %in% colnames(gwas) && !"ENSEMBL_ID" %in% colnames(gwas)) {
-    gene_to_ensembl()
+    return(gene_to_ensembl())
   }
+  return(gwas)
 }
 
 ensembl_to_gene <- function(gwas) {
@@ -99,3 +100,4 @@ populate_full_rsids <- function(gwas, build="b37_dbsnp156") {
   gwas <- tibble::as_tibble(gwas)
   return(gwas)
 }
+
