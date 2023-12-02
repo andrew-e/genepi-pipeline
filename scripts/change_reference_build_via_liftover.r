@@ -8,7 +8,7 @@ parser <- add_argument(parser, "--input_gwas",
                        type = "character"
 )
 parser <- add_argument(parser, "--input_reference_build",
-					   help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
+											 help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
                        type = "character"
 )
 parser <- add_argument(parser, "--output_reference_build",

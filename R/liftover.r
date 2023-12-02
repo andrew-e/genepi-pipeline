@@ -51,7 +51,8 @@ convert_reference_build_via_liftover <- function(gwas,
 
   updated_gwas_size <- nrow(gwas)
   if (updated_gwas_size < original_gwas_size) {
-    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size, "rows"))
+    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size, "rows",
+                  ", out of ", original_gwas_size))
   }
 
   if(!missing(output_file) && shiny::isTruthy(output_file)) {
@@ -98,7 +99,8 @@ use_bed_file_to_update_gwas <- function(gwas, bed_file) {
     ORIGINAL_CHRBP = paste(liftover_bed$X1, liftover_bed$X4, sep=":")
   )
 
-  gwas <- merge(gwas, bed_map, by.x="CHRBP", by.y="ORIGINAL_CHRBP") |>
-    dplyr::mutate(CHRBP=NULL, BP=NEW_BP, NEW_BP=NULL)
+  matching <- match(gwas$CHRBP, bed_map$ORIGINAL_CHRBP)
+  gwas$BP <- bed_map$NEW_BP[matching]
+  gwas <- gwas[!is.na(gwas$BP), !names(gwas) %in% "CHRBP", drop = FALSE]
   return(gwas)
 }

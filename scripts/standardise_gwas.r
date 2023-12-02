@@ -20,6 +20,11 @@ parser <- add_argument(parser, "--output_gwas",
                        help = "Comma separated list of filenames of the standardised GWASes",
                        type = "character"
 )
+parser <- add_argument(parser, "--input_reference_build",
+                       help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
+                       type = "character",
+                       default = NULL
+)
 parser <- add_argument(parser, "--populate_rsid",
                        help = "Should GWAS Populate RSID (based on 1000 genomes data)",
                        type = "character",
@@ -39,7 +44,8 @@ if (!args$to_output) {
                    args$output_gwas,
                    input_format = args$input_format,
                    populate_rsid_option = args$populate_rsid,
-                   bespoke_column_map = bespoke_column_map
+                   bespoke_column_map = bespoke_column_map,
+                   input_reference_build = args$input_reference_build
   )
 } else {
     format_gwas_output(args$input_gwas, args$output_gwas, args$input_format)

@@ -7,25 +7,6 @@ column_map <- list(
   ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
-#' harmonise_gwases: takes a list of gwases, get the SNPs in common
-#' across all datasets arranged to be in the same order
-#'
-#' @param: elipses of gwases
-#' @return: list of harmonised gwases
-#'
-harmonise_gwases <- function(...) {
-  gwases <- list(...)
-
-  snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
-  message(paste("Number of shared SNPs after harmonisation:", length(snpids)))
-
-  gwases <- lapply(gwases, function(gwas) {
-    dplyr::filter(gwas, SNP %in% snpids) |>
-        dplyr::arrange(SNP)
-  })
-
-  return(gwases)
-}
 
 #' standardise_gwas: takes an input gwas, changes headers, standardises allelic input, adds RSID, makes life easier
 #' @param file_gwas: filename of gwas to standardise
@@ -62,6 +43,26 @@ standardise_gwas <- function(file_gwas,
     vroom::vroom_write(gwas, output_file)
   }
   return(gwas)
+}
+
+#' harmonise_gwases: takes a list of gwases, get the SNPs in common
+#' across all datasets arranged to be in the same order
+#'
+#' @param: elipses of gwases
+#' @return: list of harmonised gwases
+#'
+harmonise_gwases <- function(...) {
+  gwases <- list(...)
+
+  snpids <- Reduce(intersect, lapply(gwases, function(gwas) gwas$SNP))
+  message(paste("Number of shared SNPs after harmonisation:", length(snpids)))
+
+  gwases <- lapply(gwases, function(gwas) {
+    dplyr::filter(gwas, SNP %in% snpids) |>
+      dplyr::arrange(SNP)
+  })
+
+  return(gwases)
 }
 
 format_gwas_output <- function(file_gwas, output_file, output_format="default") {
