@@ -11,7 +11,9 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* && \
     wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     chmod +x miniconda.sh && \
-    ./miniconda.sh -b -f -p /bin
+   ./miniconda.sh -b -f -p /bin && \
+    wget http://snapshot.debian.org/archive/debian/20160413T160058Z/pool/main/libp/libpng/libpng12-0_1.2.54-6_amd64.deb && \
+    dpkg -i libpng12-0_1.2.54-6_amd64.deb
 
 RUN cd /home && \
     git clone https://github.com/MRCIEU/PHESANT.git && \

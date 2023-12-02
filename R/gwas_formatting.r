@@ -38,6 +38,7 @@ standardise_gwas <- function(file_gwas,
                              output_file,
                              input_format="default",
                              populate_rsid_option="PARTIAL",
+                             input_reference_build=NULL,
                              bespoke_column_map=NULL) {
 
   if (is.null(column_map[[input_format]])) {
@@ -51,14 +52,15 @@ standardise_gwas <- function(file_gwas,
     change_column_names(gwas_columns) |>
     filter_incomplete_rows() |>
     standardise_columns() |>
+    convert_reference_build_via_liftover(input_reference_build) |>
     standardise_alleles() |>
     health_check() |>
     populate_rsid(populate_rsid_option) |>
     populate_gene_ids()
 
-  #if (missing(output_file) || is.null(output_file) || is.na(output_file)) {
+  if (!missing(output_file) && shiny::isTruthy(output_file)) {
     vroom::vroom_write(gwas, output_file)
-  #}
+  }
   return(gwas)
 }
 
@@ -106,10 +108,10 @@ standardise_columns <- function(gwas) {
 
 health_check <- function(gwas) {
   if (nrow(gwas[gwas$P <= 0 | gwas$P > 1, ]) > 0) {
-    stop("GWAS has some P values outside accepted range")
+    warning("GWAS has some P values outside accepted range")
   }
   if (nrow(gwas[gwas$EAF < 0 | gwas$EAF > 1, ]) > 0) {
-    stop("GWAS has some EAF values outside accepted range")
+    warning("GWAS has some EAF values outside accepted range")
   }
   #if ("OR" %in% colnames(gwas) & nrow(gwas[gwas$OR < 0, ]) > 0) {
   #  stop("GWAS has some OR values outside accepted range")
@@ -155,37 +157,4 @@ standardise_alleles <- function(gwas) {
   gwas <- dplyr::select(gwas, SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, dplyr::everything())
 
   return(gwas)
-}
-
-create_bed_file_from_gwas <- function(gwas, output_file) {
-  split <- tidyr::separate(data = gwas, col = "SNP", into = c("CHR", "BP1"), sep = "[:_]", remove = T)
-  bed_file <- tibble::tibble(
-    CHR = paste0("chr", split$CHR),
-    BP1 = split$BP1,
-    BP2 = split$BP2
-  )
-  bed_file$CHR <- paste0("chr", split$CHR)
-  bed_file$BP1 <- split$BP1
-  bed_file$BP2 <- split$BP1
-
-  if(missing(output_file)) return(bed_file)
-
-  vroom::vroom_write(bed_file, output_file, col_names=F)
-}
-
-read_liftover_output_file <- function(filename) {
-  liftover_bed <- vroom::vroom(filename)
-  N <- nrow(liftover_bed)
-
-  bed_map <- data.frame(
-    ORIG_MARKER = character(N),
-    NEW_MARKER = character(N)
-  )
-
-  liftover_bed$V1 <- gsub("chr", "", liftover_bed$V1)
-  liftover_bed$V4 <- gsub("^.*-", "", liftover_bed$V4)
-  bed_map$NEW_MARKER <- paste(liftover_bed$V1, liftover_bed$V2, sep=":")
-  bed_map$ORIG_MARKER <- paste(liftover_bed$V1, liftover_bed$V4, sep=":")
-
-  return(bed_map)
 }

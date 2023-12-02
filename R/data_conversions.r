@@ -100,4 +100,3 @@ populate_full_rsids <- function(gwas, build="b37_dbsnp156") {
   gwas <- tibble::as_tibble(gwas)
   return(gwas)
 }
-

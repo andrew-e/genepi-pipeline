@@ -145,18 +145,3 @@ rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
   sqlite_command <- paste("sqlite3", dbsnp.hg37, sqlite_query)
   output <- system(sqlite_command, intern = TRUE)
 }
-
-create_bed_file_from_gwas <- function(gwas_file, output_file, marker_column="SNP") {
-  gwas <- vroom::vroom(gwas_file)
-  N <- nrow(gwas)
-  bed_file <- data.frame(CHR = character(N), BP1 = numeric(N), BP2 = numeric(N))
-
-  split <- tidyr::separate(data = gwas, col = marker_column, into = c("CHR", "BP1"), sep = "[:_]")
-  bed_file$CHR <- paste0("chr", split$CHR)
-  bed_file$BP1 <- split$BP1
-  bed_file$BP2 <- split$BP1
-
-  if(missing(output_file)) return(bed_file)
-
-  vroom::vroom_write(bed_file, output_file)
-}

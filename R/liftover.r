@@ -1,17 +1,36 @@
-reference_builds = list(GRCh36="GRCh36", GRCh37="GRCh37", GRCh38="GRCh38")
+reference_builds <- list(GRCh36="GRCh36", GRCh37="GRCh37", GRCh38="GRCh38")
 available_liftover_conversions <- list()
 available_liftover_conversions[[paste0(reference_builds$GRCh36, reference_builds$GRCh37)]]<-"hg18ToHg19.over.chain.gz"
 available_liftover_conversions[[paste0(reference_builds$GRCh38, reference_builds$GRCh37)]]<-"hg38ToHg19.over.chain.gz"
 available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh38)]]<-"hg19ToHg38.over.chain.gz"
 available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh36)]]<-"hg19ToHg18.over.chain.gz"
 
-
-convert_reference_build_via_liftover <- function(gwas, input_reference_build, output_reference_build, output_file) {
-  gwas <- get_file_or_dataframe(gwas)
-    
-  if (!all(c(input_reference_build, output_reference_build) %in% reference_builds)) {
-    stop("Error: invalid/unsupported reference builds when attempting to convert via liftover")
+#' convert_reference_build_via_liftover: Change reference build of BP marker from allow list of liftOver conversions
+#'
+#' @param gwas: GWAS (file or dataframe) of standardised GWAS
+#' @param input_reference_build: string reference build, found in reference_builds list
+#' @param input_reference_build: string reference build that GWAS is in, found in reference_builds list
+#' @param input_reference_build: string reference build to change to, found in reference_builds list
+#' @param output_file: optional output file name to save to
+#' @return gwas input is altered and returned
+convert_reference_build_via_liftover <- function(gwas,
+                                                 input_reference_build,
+                                                 output_reference_build=reference_builds$GRCh37,
+                                                 output_file) {
+  if (missing(input_reference_build) ||
+      !shiny::isTruthy(input_reference_build) ||
+      input_reference_build == output_reference_build) {
+    return(gwas)
   }
+
+  liftover_conversion <- available_liftover_conversions[[paste0(input_reference_build, output_reference_build)]]
+  if (is.null(liftover_conversion)) {
+    stop(paste(c("Error: liftOver combination of", input_build, output_build, "not recocognised.",
+                  "Reference builds must be one of:", reference_builds), collapse = " "))
+  }
+
+  gwas <- get_file_or_dataframe(gwas)
+  original_gwas_size <- nrow(gwas)
 
   gwas$CHRBP <- paste(gwas$CHR, gwas$BP, sep=":")
   if (input_reference_build == reference_builds$GRCh37) {
@@ -24,18 +43,27 @@ convert_reference_build_via_liftover <- function(gwas, input_reference_build, ou
 
   bed_file_input <- tempfile(fileext = ".bed")
   bed_file_output <- tempfile(fileext = ".bed")
-  unmapped <- tempfile(fileext = "unmapped")
+  unmapped <- tempfile(fileext = ".unmapped")
 
   create_bed_file_from_gwas(gwas, bed_file_input)
   run_liftover(bed_file_input, bed_file_output, input_reference_build, output_reference_build, unmapped)
   gwas <- use_bed_file_to_update_gwas(gwas, bed_file_output)
 
-  if(!missing(output_file) && shiny::isTruthy(output_file)) vroom::vroom_write(gwas, output_file)
+  updated_gwas_size <- nrow(gwas)
+  if (updated_gwas_size < original_gwas_size) {
+    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size, "rows"))
+  }
+
+  if(!missing(output_file) && shiny::isTruthy(output_file)) {
+    vroom::vroom_write(gwas, output_file)
+    unmapped_file_location <- paste0(dirname(output_file), file_prefix(output_file), ".unmapped")
+    file.copy(unmapped, unmapped_file_location)
+  }
   return(gwas)
 }
 
 
-create_bed_file_from_gwas <- function(gwas, output_file, marker_column="SNP") {
+create_bed_file_from_gwas <- function(gwas, output_file) {
   gwas <- get_file_or_dataframe(gwas)
 
   bed_format <- tibble::tibble(
@@ -52,16 +80,10 @@ create_bed_file_from_gwas <- function(gwas, output_file, marker_column="SNP") {
 
 run_liftover <- function(bed_file_input, bed_file_output, input_build, output_build, unmapped) {
   lifover_binary <- paste0(liftover_dir, "liftOver")
-  
   liftover_conversion <- available_liftover_conversions[[paste0(input_build, output_build)]]
-
-  if (is.null(liftover_conversion)) {
-    stop(paste("Error: liftOver format", output_format, "not recognized."))
-  }
 
   chain_file <- paste0(liftover_dir, liftover_conversion)
   liftover_command <- paste(lifover_binary, bed_file_input, chain_file, bed_file_output, unmapped)
-  print(liftover_command)
   system(liftover_command, wait=T)
 }
 
@@ -69,14 +91,14 @@ run_liftover <- function(bed_file_input, bed_file_output, input_build, output_bu
 use_bed_file_to_update_gwas <- function(gwas, bed_file) {
   liftover_bed <- vroom::vroom(bed_file, col_names=F)
   liftover_bed$X1 <- gsub("chr", "", liftover_bed$X1)
-  liftover_bed$X4 <- sub("chr\\d:(\\d+)-\\d+", "\\1", liftover_bed$X4, perl=T)
+  liftover_bed$X4 <- sub(".*:(\\d+)-.*", "\\1", liftover_bed$X4, perl=T)
 
   bed_map <- tibble::tibble(
     NEW_BP = liftover_bed$X2,
     ORIGINAL_CHRBP = paste(liftover_bed$X1, liftover_bed$X4, sep=":")
   )
 
-  gwas <- merge(gwas, bed_map, by.x="CHRBP", by.y="ORIGINAL_CHRBP", all.x=T) |>
-    dplyr::mutate(CHRBP=NULL, BP=NEW_BP)
+  gwas <- merge(gwas, bed_map, by.x="CHRBP", by.y="ORIGINAL_CHRBP") |>
+    dplyr::mutate(CHRBP=NULL, BP=NEW_BP, NEW_BP=NULL)
   return(gwas)
 }
