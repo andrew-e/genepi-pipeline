@@ -35,7 +35,7 @@ convert_z_to_p <- function(gwas) {
 }
 
 calculate_f_statistic <- function(gwas) {
-  gwas$F_STAT <- qchisq(gwas$P,1,low=F)
+  gwas$F_STAT <- qchisq(gwas$P,1, low=F)
   return(gwas)
 }
 
@@ -66,8 +66,7 @@ gene_to_ensembl <- function(gwas) {
 }
 
 populate_rsid <- function(gwas, option) {
-  message("Start Time:")
-  message(Sys.time())
+  start <- Sys.time()
   if (option == "NO" || column_map$default$RSID %in% colnames(gwas)) {
     message("Skipping RSID population for GWAS")
   }
@@ -77,8 +76,8 @@ populate_rsid <- function(gwas, option) {
   else if (option == "PARTIAL") {
     gwas <- populate_partial_rsids(gwas)
   }
-  message("Time taken:")
-  message(Sys.time())
+  message("RSID population time taken:")
+  print(Sys.time() - start)
   return (gwas)
 }
 

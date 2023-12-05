@@ -10,4 +10,3 @@ test_that( "r_markdown test rmd works", {
 
   expect_true(file.exists(html_output_file))
 })
-

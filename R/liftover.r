@@ -22,6 +22,7 @@ convert_reference_build_via_liftover <- function(gwas,
       input_reference_build == output_reference_build) {
     return(gwas)
   }
+  start <- Sys.time()
 
   liftover_conversion <- available_liftover_conversions[[paste0(input_reference_build, output_reference_build)]]
   if (is.null(liftover_conversion)) {
@@ -51,8 +52,9 @@ convert_reference_build_via_liftover <- function(gwas,
 
   updated_gwas_size <- nrow(gwas)
   if (updated_gwas_size < original_gwas_size) {
-    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size, "rows",
-                  ", out of ", original_gwas_size))
+    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size,
+                  "rows out of", original_gwas_size)
+    )
   }
 
   if(!missing(output_file) && shiny::isTruthy(output_file)) {
@@ -60,6 +62,8 @@ convert_reference_build_via_liftover <- function(gwas,
     unmapped_file_location <- paste0(dirname(output_file), file_prefix(output_file), ".unmapped")
     file.copy(unmapped, unmapped_file_location)
   }
+  message("Liftover time taken:")
+  print(Sys.time() - start)
   return(gwas)
 }
 

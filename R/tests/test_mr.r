@@ -1,6 +1,7 @@
 library(testthat)
 source("R/mr.r")
 source("R/util.r")
+source("R/data_conversions.r")
 source("R/graphs.r")
 
 pqtl_top_hits_dir <- "R/tests/data"

@@ -31,7 +31,6 @@ compare_replication_across_all_gwas_permutations <- function(gwas_filenames,
 }
 
 compare_two_gwases_from_clumped_hits <- function(first_gwas, second_gwas, clumped_snps) {
-  library(vroom)
   library(dplyr)
   comparison_name <- paste0(file_prefix(first_gwas), "_vs_", file_prefix(second_gwas))
 
@@ -40,9 +39,9 @@ compare_two_gwases_from_clumped_hits <- function(first_gwas, second_gwas, clumpe
 
   #vroom has trouble reading plink --clump output
   clumped_snps <- data.table::fread(clumped_snps, select = clump_columns)
-  first_gwas <- vroom::vroom(first_gwas, col_select = dplyr::all_of(comparison_columns)) |>
-    subset(RSID %in% clumped_snps$SNP)
-  second_gwas <- vroom::vroom(second_gwas, col_select = dplyr::all_of(comparison_columns))
+  first_gwas <- get_file_or_dataframe(first_gwas, columns = comparison_columns) |>
+    dplyr::filter(RSID %in% clumped_snps$SNP)
+  second_gwas <- get_file_or_dataframe(second_gwas, columns = comparison_columns)
 
   harmonised_gwases <- harmonise_gwases(first_gwas, second_gwas)
   results <- expected_vs_observed_replication(harmonised_gwases[[1]]$BETA,
@@ -124,15 +123,13 @@ compare_heterogeneity_across_ancestries <- function(gwas_filenames,
                                                     heterogeneity_score_file,
                                                     heterogeneity_plot_file,
                                                     heterogeneity_plots_per_snp_file) {
-  library(vroom)
-
   comparison_columns <- c("SNP", "BETA", "SE", "RSID")
   clumped_snps <- data.table::rbindlist(lapply(clumped_filenames, data.table::fread))$SNP
   clumped_snps <- unique(clumped_snps)
 
   gwases <- lapply(gwas_filenames, function(gwas_filename) {
-    vroom::vroom(gwas_filename, col_select = dplyr::all_of(comparison_columns)) |>
-      subset(RSID %in% clumped_snps)
+    get_file_or_dataframe(gwas_filename, columns = comparison_columns) |>
+      dplyr::filter(RSID %in% clumped_snps)
   })
   for (i in seq_along(gwases)) {
     gwases[[i]]$ancestry <- ancestry_list[[i]]

@@ -32,8 +32,8 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
   library(SlopeHunter, quietly = TRUE)
 
   clumped_snps <- data.table::fread(clumped_snps_file)
-  incidence <- data.table::fread(incidence_gwas)
-  subsequent <- data.table::fread(subsequent_gwas)
+  incidence <- get_file_or_dataframe(incidence_gwas)
+  subsequent <- get_file_or_dataframe(subsequent_gwas)
   clumped_snps <- map_rsid_list_to_snps(incidence, clumped_snps$SNP)
 
   message(paste("Found", length(clumped_snps), "in incidence GWAS for clumping"))
@@ -79,12 +79,12 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
     se_cols = c("SE.incidence", "SE.prognosis"),
     EA_cols = c("EA.incidence", "EA.prognosis"),
     OA_cols = c("OA.incidence", "OA.prognosis")
-  ) |> subset(remove == F & palindromic == F)
+  ) |> dplyr::filter(remove == F & palindromic == F)
 
   vroom::vroom_write(harmonised_effects, harmonised_effects_result_file)
 
   clumped_snps <- tolower(clumped_snps)
-  pruned_harmonised_effects <- subset(harmonised_effects, (SNP %in% clumped_snps) & !is.na(BETA.prognosis) & BETA.prognosis < 10)
+  pruned_harmonised_effects <- dplyr::filter(harmonised_effects, (SNP %in% clumped_snps) & !is.na(BETA.prognosis) & BETA.prognosis < 10)
 
   message("Starting SlopeHunter")
   pruned_harmonised_effects_df <- data.frame(pruned_harmonised_effects)
@@ -172,7 +172,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
                                                     sep="\t"
     )
 
-    mr_incidence <- subset(mr_incidence, pval.exposure <= p_value_threshold & (SNP %in% clumped_snps) & !duplicated((mr_incidence)))
+    mr_incidence <- dplyr::filter(mr_incidence, pval.exposure <= p_value_threshold & (SNP %in% clumped_snps) & !duplicated((mr_incidence)))
     mr_incidence$exposure <- "incidence"
     mr_incidence$id.exposure <- "incidence"
     mr_incidence$mr_keep.exposure <- TRUE
@@ -207,7 +207,7 @@ conduct_collider_bias_analysis <- function(incidence_gwas,
 
   vroom::vroom_write(collider_bias_results, collider_bias_results_file)
 
-  slopehunter_default_result <- subset(collider_bias_results, METHOD == collider_bias_type$slopehunter & P_VALUE_THRESHOLD == 0.001)
+  slopehunter_default_result <- dplyr::filter(collider_bias_results, METHOD == collider_bias_type$slopehunter & P_VALUE_THRESHOLD == 0.001)
   harmonised_effects <- adjust_gwas_data_from_weights_and_save(subsequent,harmonised_effects,
                                                                slopehunter_default_result$METHOD,
                                                                slopehunter_default_result$BETA,
@@ -252,10 +252,10 @@ adjust_gwas_data_from_weights_and_save <- function(gwas,
     lower.tail = FALSE
   )
 
-  gwas <- merge(gwas, subset(harmonised_effects, select = c("SNP", adjusted_beta, adjusted_se, adjusted_p)), by="SNP")
-  gwas <- subset(gwas, select = -c(BETA, SE, P)) %>%
-    dplyr::rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p) %>%
-    convert_beta_to_or()
+  he_columns <- c("SNP", adjusted_beta, adjusted_se, adjusted_p)
+  gwas <- merge(gwas, dplyr::select(harmonised_effects, dplyr::all_of(he_columns)), by="SNP") |>
+    dplyr::select(-dplyr::all_of(c("BETA", "SE", "P"))) |>
+    dplyr::rename(BETA = adjusted_beta, SE = adjusted_se, P = adjusted_p)
 
   vroom::vroom_write(gwas, output_file)
 }

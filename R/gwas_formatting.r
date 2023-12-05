@@ -80,7 +80,9 @@ filter_incomplete_rows <- function(gwas) {
                           !is.na(gwas$BP) & !is.null(gwas$BP),
   ]
   filtered_rows <- nrow(gwas) - nrow(filtered_gwas)
-  if (filtered_rows > 0) {
+  if (nrow(filtered_gwas) == 0) {
+    stop("Error: all rows have been filtered from GWAS due to lack of information.  Stopping")
+  } else if (filtered_rows > 0) {
     warning(paste("Warning: Filtering out ", filtered_rows, "rows due to NULLs and NAs"))
   }
   return(filtered_gwas)

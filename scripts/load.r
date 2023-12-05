@@ -1,11 +1,4 @@
 #maybe look at changing this to creating a package: https://stackoverflow.com/a/48094346/6104011
 source("../R/util.r")
 source("../R/constants.r")
-source("../R/gwas_formatting.r")
-source("../R/gwas_comparisons.r")
-source("../R/collider_bias.r")
-source("../R/graphs.r")
-source("../R/coloc.r")
-source("../R/mr.r")
-source("../R/data_conversions.r")
-source("../R/liftover.r")
+lapply(list.files("../R/", full.names = T, pattern="\\.r$"), source)

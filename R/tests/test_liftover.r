@@ -5,9 +5,10 @@ source("R/liftover.r")
 
 test_that("liftover.convert_reference_build_via_liftover returns updated data frame", {
   local_mock(
-      system = function(command, wait) {
+      system = function(command, wait, intern) {
         bed_output_file <- unlist(strsplit(command, " "))[4]
         file.copy("R/tests/data/test_data_small_hg38.bed.gz", bed_output_file)
+        return("hlkj")
       }
   )
   result <- convert_reference_build_via_liftover("R/tests/data/test_data_small.tsv.gz",

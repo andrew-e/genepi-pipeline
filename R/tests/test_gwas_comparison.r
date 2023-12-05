@@ -1,5 +1,4 @@
 library(testthat)
-library(vroom)
 source("R/util.r")
 source("R/graphs.r")
 source("R/gwas_formatting.r")

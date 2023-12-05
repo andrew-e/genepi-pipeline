@@ -13,7 +13,7 @@ get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
       if (is.null(columns)) {
         input <- vroom::vroom(input)
       } else {
-        input <- vroom::vroom(input, dplyr::all_of(columns))
+        input <- vroom::vroom(input, col_select = dplyr::all_of(columns))
       }
     }
     input <- subset(input, `if`(is.null(snps), T, SNP %in% snps))
@@ -21,9 +21,7 @@ get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
   return(input)
 }
 
-#' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS,
-#' this is much faster way of doing it (I think?)
-#'
+#' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS, this saves time and memory
 #' NOTE: only works with data that has been standardised, through `standardise_gwas`, or at least a tsv
 vroom_snps <- function(gwas_file, snps=c()){
   snps <- paste(snps, collapse="\t|")
@@ -44,7 +42,7 @@ vroom_snps <- function(gwas_file, snps=c()){
 }
 
 gwas_region <- function(gwas, chr, bp, range = 500000) {
-  return(subset(gwas, CHR == chr & BP > (bp - floor(range/2)) & BP < (bp + floor(range/2))))
+  return(dplyr::filter(gwas, CHR == chr &BP > (bp - floor(range/2)) & BP < (bp + floor(range/2))))
 }
 
 
@@ -100,7 +98,6 @@ map_rsid_list_to_snps <- function(gwas, rsids=c()) {
 }
 
 create_html_from_rmd <- function(rmd_file, params = list(), output_file) {
-  library(rmarkdown, quietly = T)
   temp_file <- tempfile(fileext = ".rmd", tmpdir = "/tmp")
   file.copy(rmd_file, temp_file, overwrite = TRUE)
 
@@ -114,9 +111,17 @@ create_html_from_rmd <- function(rmd_file, params = list(), output_file) {
 get_other_docker_tag <- function() {
   tag_to_match <- "test"
   docker_url <- "https://hub.docker.com/v2/repositories/andrewrrelmore/genepi_pipeline/tags/"
-
-  response <- httr::GET(docker_url, httr::accept_json())
-  tag_information <- httr::content(response, type="application/json")$results
+  tag_information <- c()
+  tryCatch(
+   expr = {
+      response <- httr::GET(docker_url, httr::accept_json())
+      tag_information <- httr::content(response, type="application/json")$results
+   },
+   error = function(e) {
+     message(paste("Call to docker hub failed:", e))
+     return(tag_to_match)
+   }
+  )
 
   #we can't be sure about tag order, so iterating over it twice
   for (tag in tag_information) {

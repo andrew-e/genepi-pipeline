@@ -1,9 +1,9 @@
-forest_plot <- function(table, title, output_file) {
+forest_plot <- function(table, title, output_file, y_column=NA) {
   if (!all(c("BETA", "SE") %in% names(table))) {
     stop("data frame needs to have BETA and SE columns")
   }
 
-  first_column_name <- colnames(table)[1]
+  first_column_name <- if(shiny::isTruthy(y_column)) y_column else colnames(table)[1]
   table$BETA <- as.numeric(table$BETA)
   table$SE <- as.numeric(table$SE)
 
@@ -71,7 +71,7 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
 #' @return 2 plots: one manhattan plot and one QQ plot (with lambda included)
 manhattan_and_qq <- function(gwas_filename, manhattan_filename, qq_filename, include_qq = T) {
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
-  gwas <- vroom::vroom(gwas_filename, col_select = dplyr::all_of(manhattan_columns))
+  gwas <- get_file_or_dataframe(gwas_filename, columns = manhattan_columns)
   gwas <- gwas[complete.cases(gwas), ]
 
   png(manhattan_filename, width = 1500, height = 500)
@@ -106,8 +106,8 @@ miami_plot <- function(first_gwas_filename,
   show_specific_region <- !is.na(chr) & !is.na(bp) & !is.na(range)
 
   manhattan_columns <- c("SNP", "CHR", "BP", "P")
-  first_gwas <- vroom::vroom(first_gwas_filename, col_select = dplyr::all_of(manhattan_columns))
-  second_gwas <- vroom::vroom(second_gwas_filename, col_select = dplyr::all_of(manhattan_columns))
+  first_gwas <- get_file_or_dataframe(first_gwas_filename, manhattan_columns)
+  second_gwas <- get_file_or_dataframe(second_gwas_filename, manhattan_columns)
   first_gwas <- first_gwas[complete.cases(first_gwas), ]
   second_gwas <- second_gwas[complete.cases(second_gwas), ]
 

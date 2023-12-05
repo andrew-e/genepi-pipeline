@@ -58,10 +58,11 @@ run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposur
 
     mr_results$p.adjusted <- p.adjust(mr_results$pval, "fdr")
 
-    qtl_dataset <- vroom::vroom(qtl_file)
+    qtl_dataset <- vroom::vroom(qtl_file) |>
+      calculate_f_statistic()
     matching <- match(mr_results$exposure, qtl_dataset$EXPOSURE)
     mr_results$SNP <- qtl_dataset$SNP[matching]
-    mr_results <- calculate_f_statistic(mr_results)
+    mr_results$F_STAT <- qtl_dataset$F_STAT[matching]
 
     return(mr_results)
   }) %>% dplyr::bind_rows()

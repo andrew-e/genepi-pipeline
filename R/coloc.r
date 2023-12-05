@@ -41,7 +41,7 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
                                         default_n=NA,
                                         output_file) {
   coloc_columns <- c("SNP", "CHR", "BP", "P", "SE", "N", "EAF")
-  gwas <- vroom::vroom(gwas_file, col_select = coloc_columns) |> subset(EAF > 0 & EAF < 1)
+  gwas <- get_file_or_dataframe(gwas_file, columns = coloc_columns) |> dplyr::filter(EAF > 0 & EAF < 1)
   range <- 500000
 
   mr_results <- vroom::vroom(mr_results_file)
@@ -64,7 +64,7 @@ run_coloc_on_qtl_mr_results <- function(mr_results_file,
       metabrain_dir <- "scratch/data/qtls/metabrain/"
       qtl_gwas_file <- paste0(metabrain_dir, "gwas/", brain_region, "/", mr_result[["exposure"]], "_", ancestry, ".tsv.gz")
 
-      qtl_chr_gwas <- vroom::vroom(qtl_gwas_file) |> subset(EAF > 0 & EAF < 1)
+      qtl_chr_gwas <- vroom::vroom(qtl_gwas_file) |> dplyr::filter(EAF > 0 & EAF < 1)
     }
     else {
       stop("Error: qtl dataset not supported for coloc right now")

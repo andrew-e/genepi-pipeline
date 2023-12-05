@@ -1,6 +1,6 @@
 library(testthat)
-library(vroom)
 source("R/gwas_formatting.r")
+source("R/data_conversions.r")
 source("R/util.r")
 
 test_that("gwas_formatting.vroom_snps gets just a handful of SNPS from a GWAS", {
