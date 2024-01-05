@@ -4,7 +4,8 @@ library(dplyr, quietly=T)
 column_map <- list(
   default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N", ENSEMBL_ID="ENSEMBL_ID", GENE_ID="GENE_ID"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
-  ieu_ukb = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
+  opengwas = list(CHR="chr", BP="position", BETA="beta", P="p", SE="se", N="n", EAF="eaf", EA="ea", OA="nea", RSID="rsid"),
+  ieu_ukb_pipeline = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
 )
 
 
@@ -159,5 +160,70 @@ standardise_alleles <- function(gwas) {
   gwas$SNP <- toupper(paste0(gwas$CHR, ":", format(gwas$BP, scientific = F, trim = T), "_", gwas$EA, "_", gwas$OA))
   gwas <- dplyr::select(gwas, SNP, CHR, BP, EA, OA, EAF, BETA, SE, P, dplyr::everything())
 
+  return(gwas)
+}
+
+#' convert_or_to_beta: Given an OR and lower and upper bounds,
+#'   calculates the BETA, and SE.
+#'   based on this answer: https://stats.stackexchange.com/a/327684
+#'
+#' @param gwas: dataframe with the following columns: OR, LB (lower bound), UB (upper bound)
+#' @return gwas with new columns BETA and SE
+#'
+convert_or_to_beta <- function(gwas) {
+  gwas <- get_file_or_dataframe(gwas)
+  gwas$BETA <- log(gwas$OR)
+
+  if ("OR_SE" %in% colnames(gwas)) {
+    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
+    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
+    gwas$SE <- gwas$OR_SE
+  }
+  if (all(c("OR_LB", "OR_UB") %in% colnames(gwas))) {
+    gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.96)
+  }
+  else {
+    stop("Need OR_SE, or OR_LB + OR_UB to complete conversion")
+  }
+
+  return(gwas)
+}
+
+convert_beta_to_or <- function(gwas) {
+  gwas <- get_file_or_dataframe(gwas)
+
+  gwas$OR <- exp(gwas$BETA)
+  gwas$OR_LB <- gwas$OR - 1.96 * gwas$SE
+  gwas$OR_UB <- gwas$OR + 1.96 * gwas$SE
+  return(gwas)
+}
+
+#taken from here, check if this is right https://www.biostars.org/p/319584/
+calculate_beta_from_z_score <- function(gwas) {
+  gwas$BETA <- gwas$Z / sqrt(
+    2 * gwas$EAF * (1 - gwas$EAF) * (gwas$N + gwas$Z^2)
+  )
+  gwas$SE <- sqrt(
+    (2*gwas$EAF) * (1-(gwas$EAF)) * (gwas$N + gwas$Z^2)
+  )
+
+  return(gwas)
+}
+
+convert_negative_log_p_to_p <- function(gwas) {
+  gwas$P <- 10^-gwas$LOG_P
+}
+
+convert_p_to_negative_log_p <- function(gwas) {
+  gwas$LOG_P <- -log10(gwas$P)
+}
+
+convert_z_to_p <- function(gwas) {
+  gwas$P <- 2 * pnorm(-abs(gwas$Z))
+  return(gwas)
+}
+
+calculate_f_statistic <- function(gwas) {
+  gwas$F_STAT <- qchisq(gwas$P, 1, low=F)
   return(gwas)
 }

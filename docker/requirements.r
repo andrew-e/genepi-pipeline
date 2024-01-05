@@ -9,11 +9,12 @@ install.packages('https://homepages.uni-regensburg.de/~wit59712/easyqc/EasyQC_23
 devtools::install_github(c("Osmahmoud/SlopeHunter",
                            "phenoscanner/phenoscanner",
                            "MRCIEU/ieugwasr",
+													 "MRCIEU/gwasvcf",
                            "MRCIEU/TwoSampleMR",
                            "suchestoncampbelllab/gwasurvivr",
-						   "nicksunderland/genepi.utils",
+													 "nicksunderland/genepi.utils",
                            "yixuan/prettydoc")
 )
 
 
-BiocManager::install("GENESIS")
+BiocManager::install(c("GENESIS", "VariantAnnotation"))

@@ -24,17 +24,23 @@ std_file_pattern = standardised_gwas_name("{prefix}")
 
 
 #List of output files
-expected_vs_observed_results = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_outcomes.tsv"
-expected_vs_observed_variants = RESULTS_DIR + "ancestry_comparison/expected_vs_observed_variants.tsv"
-heterogeneity_scores = RESULTS_DIR + "ancestry_comparison/heterogeneity_scores.tsv"
+expected_vs_observed_results = RESULTS_DIR + "gwas_comparison/expected_vs_observed_outcomes.tsv"
+expected_vs_observed_variants = RESULTS_DIR + "gwas_comparison/expected_vs_observed_variants.tsv"
+heterogeneity_scores = RESULTS_DIR + "gwas_comparison/heterogeneity_scores.tsv"
 heterogeneity_plot = RESULTS_DIR + "plots/ancestry_heterogeneity_plot.png"
 heterogeneity_snp_comparison = RESULTS_DIR + "plots/ancestry_heterogeneity_snp_comparison.png"
-results_file = RESULTS_DIR + "ancestry_comparison/result_summary.html"
+ldsc_results = RESULTS_DIR + "gwas_comparison/ldsc_results.tsv"
+results_file = RESULTS_DIR + "gwas_comparison/result_summary.html"
 
 
 rule all:
-    input: expand(std_file_pattern, [g.prefix for g in pipeline.gwases]), expected_vs_observed_results,
-        expected_vs_observed_variants, heterogeneity_scores, heterogeneity_plot, heterogeneity_snp_comparison, results_file
+    input: expand(std_file_pattern, [g.prefix for g in pipeline.gwases]),
+        expected_vs_observed_results,
+        expected_vs_observed_variants,
+        heterogeneity_scores,
+        heterogeneity_plot,
+        heterogeneity_snp_comparison,
+        results_file
 
 
 rule standardise_gwases:
@@ -100,7 +106,7 @@ rule compare_observed_vs_expected_gwas:
         """
 
 
-rule heterogeneity_between_ancestries:
+rule heterogeneity_between_gwases:
     resources:
         mem = f"{len(pipeline.gwases)*10}G"
     input:
@@ -121,6 +127,19 @@ rule heterogeneity_between_ancestries:
             --heterogeneity_plot_per_snp_output {output.heterogeneity_snp_comparison}
         """
 
+# rule calculate_ldsc_and_genetic_correlation:
+#     resources:
+#         mem = f"{len(pipeline.gwases)*10}G"
+#     input:
+#         gwases = [g.standardised_gwas for g in pipeline.gwases],
+#     output:
+#         ldsc_result = ldsc_results
+#     shell:
+#         """
+#         ./run_ldsc.sh stuff here
+#         """
+
+
 files_created = {
     "results": expected_vs_observed_results,
     "variants": expected_vs_observed_variants,
@@ -140,7 +159,7 @@ rule create_results_file:
     shell:
         """
         Rscript create_results_file.r \
-            --rmd_file /home/R/markdown/ancestry_comparison.rmd \
+            --rmd_file /home/R/markdown/gwas_comparison.rmd \
             --params {results_string} \
             --output_file {output}
         """

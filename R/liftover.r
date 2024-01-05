@@ -1,16 +1,15 @@
 reference_builds <- list(GRCh36="GRCh36", GRCh37="GRCh37", GRCh38="GRCh38")
 available_liftover_conversions <- list()
-available_liftover_conversions[[paste0(reference_builds$GRCh36, reference_builds$GRCh37)]]<-"hg18ToHg19.over.chain.gz"
-available_liftover_conversions[[paste0(reference_builds$GRCh38, reference_builds$GRCh37)]]<-"hg38ToHg19.over.chain.gz"
-available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh38)]]<-"hg19ToHg38.over.chain.gz"
-available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh36)]]<-"hg19ToHg18.over.chain.gz"
+available_liftover_conversions[[paste0(reference_builds$GRCh36, reference_builds$GRCh37)]] <- "hg18ToHg19.over.chain.gz"
+available_liftover_conversions[[paste0(reference_builds$GRCh38, reference_builds$GRCh37)]] <- "hg38ToHg19.over.chain.gz"
+available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh38)]] <- "hg19ToHg38.over.chain.gz"
+available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds$GRCh36)]] <- "hg19ToHg18.over.chain.gz"
 
 #' convert_reference_build_via_liftover: Change reference build of BP marker from allow list of liftOver conversions
 #'
 #' @param gwas: GWAS (file or dataframe) of standardised GWAS
 #' @param input_reference_build: string reference build, found in reference_builds list
-#' @param input_reference_build: string reference build that GWAS is in, found in reference_builds list
-#' @param input_reference_build: string reference build to change to, found in reference_builds list
+#' @param output_reference_build: string reference build that GWAS is to change to, found in reference_builds list
 #' @param output_file: optional output file name to save to
 #' @return gwas input is altered and returned
 convert_reference_build_via_liftover <- function(gwas,

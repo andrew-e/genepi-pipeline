@@ -136,6 +136,7 @@ compare_heterogeneity_across_ancestries <- function(gwas_filenames,
   }
 
   harmonised_gwases <- rlang::inject(harmonise_gwases(!!!gwases))
+  #TODO: change this to be more generic names (not based on ancestry alone).  So it can be more exensible
   gwases_by_ancestry <- stats::setNames(harmonised_gwases, ancestry_list)
 
   heterogeneity_results <- calculate_heterogeneity_scores(gwases_by_ancestry, heterogeneity_score_file)
@@ -187,7 +188,9 @@ calculate_heterogeneity_scores <- function(gwases_by_ancestry, heterogeneity_sco
     dplyr::rename(setNames(paste0("V", seq_along(gwases_by_ancestry)), names(gwases_by_ancestry))) %>%
     dplyr::mutate(SNP = gwases_by_ancestry[[1]]$SNP)
 
-  vroom::vroom_write(Q, heterogeneity_score_file)
+  joined_heteogeneity_data <- merge(Q, Qj, by="SNP")
+
+  vroom::vroom_write(joined_heteogeneity_data, heterogeneity_score_file)
   return(list(Q=Q, Qj=Qj))
 }
 

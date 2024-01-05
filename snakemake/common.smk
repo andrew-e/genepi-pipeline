@@ -135,7 +135,7 @@ def copy_data_to_rdfs(files_created):
         print(f"Files successfully copied to {RDFS_DIR}")
 
 
-def onsuccess(files_created, results_file=None):
+def onsuccess(files_created=list(), results_file=None):
     print("\nWorkflow finished, no errors.  List of created files:")
     print(*files_created, sep='\n')
 

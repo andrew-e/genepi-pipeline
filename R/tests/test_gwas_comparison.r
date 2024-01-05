@@ -55,7 +55,7 @@ test_that("gwas_comparison.compare_heterogeneity_across_ancestries works well", 
 
   expect_true(file.exists(heterogeneity_file))
   results <- vroom::vroom(heterogeneity_file)
-  #expect_equal(nrow(results), 4 * length(input_gwases))
+  expect_true(all(results$Qpval == 1))
 
   expect_true(file.exists(first_plot))
   expect_true(file.exists(second_plot))

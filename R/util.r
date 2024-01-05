@@ -5,15 +5,23 @@ get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
   }
   else {
     if (!file.exists(input)) stop(paste("Error:", input, "can't be found"))
-    if (!is.null(snps)) {
-      input <- vroom_snps(input, snps) |>
-          dplyr::select(`if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns)))
+
+    if (endsWith(input, ".vcf") || endsWith(input, ".vcf.gz") ) {
+      vcf <- VariantAnnotation::readVcf(input)
+      input <- gwasvcf::vcf_to_granges(vcf) |> dplyr::as_tibble()
+      input <- gwasvcf::vcf_to_tibble(vcf)
     }
     else {
-      if (is.null(columns)) {
-        input <- vroom::vroom(input)
-      } else {
-        input <- vroom::vroom(input, col_select = dplyr::all_of(columns))
+      if (!is.null(snps)) {
+        input <- vroom_snps(input, snps) |>
+            dplyr::select(`if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns)))
+      }
+      else {
+        if (is.null(columns)) {
+          input <- vroom::vroom(input)
+        } else {
+          input <- vroom::vroom(input, col_select = dplyr::all_of(columns))
+        }
       }
     }
     input <- subset(input, `if`(is.null(snps), T, SNP %in% snps))

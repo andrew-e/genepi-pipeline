@@ -1,43 +1,3 @@
-#' convert_or_to_beta: Given an OR and lower and upper bounds,
-#'   calculates the BETA, and SE.
-#'   based on this answer: https://stats.stackexchange.com/a/327684
-#'
-#' @param gwas: dataframe with the following columns: OR, LB (lower bound), UB (upper bound)
-#' @return gwas with new columns BETA and SE
-#'
-convert_or_to_beta <- function(gwas) {
-  gwas$BETA <- log(gwas$OR)
-
-  if ("OR_SE" %in% colnames(gwas)) {
-    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
-    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
-    gwas$SE <- gwas$OR_SE
-  }
-  if (all(c("OR_LB", "OR_UB") %in% colnames(gwas))) {
-    gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.96)
-  }
-  else {
-    stop("Need OR_SE, or OR_LB + OR_UB to complete conversion")
-  }
-
-  return(gwas)
-}
-
-convert_beta_to_or <- function(gwas) {
-  gwas$OR <- exp(gwas$BETA)
-  gwas$OR_SE <- gwas$SE
-  return(gwas)
-}
-
-convert_z_to_p <- function(gwas) {
-  gwas$P <- 2 * pnorm(-abs(gwas$Z))
-  return(gwas)
-}
-
-calculate_f_statistic <- function(gwas) {
-  gwas$F_STAT <- qchisq(gwas$P,1, low=F)
-  return(gwas)
-}
 
 populate_gene_ids <- function(gwas) {
   if ("ENSEMBL_ID" %in% colnames(gwas) && !"GENE_ID" %in% colnames(gwas)) {
@@ -65,15 +25,20 @@ gene_to_ensembl <- function(gwas) {
   return(gwas)
 }
 
-populate_rsid <- function(gwas, option) {
+populate_rsid_options <- list(no="NO", partial="PARTIAL", full="FULL")
+rsid_builds <- list(GRCh37="b37_dbsnp156")
+
+populate_rsid <- function(gwas, option=populate_rsid_options$partial) {
+  if (!option %in% populate_rsid_options) stop(paste("Error: invalid option:", option))
+
   start <- Sys.time()
-  if (option == "NO" || column_map$default$RSID %in% colnames(gwas)) {
+  if (option == populate_rsid_options$no || column_map$default$RSID %in% colnames(gwas)) {
     message("Skipping RSID population for GWAS")
   }
-  else if (option == "FULL") {
+  else if (option == populate_rsid_options$full) {
     gwas <- populate_full_rsids(gwas)
   }
-  else if (option == "PARTIAL") {
+  else if (option == populate_rsid_options$partial) {
     gwas <- populate_partial_rsids(gwas)
   }
   message("RSID population time taken:")
@@ -90,10 +55,12 @@ populate_partial_rsids <- function(gwas) {
   return(gwas)
 }
 
-populate_full_rsids <- function(gwas, build="b37_dbsnp156") {
-  gc()
-  gwas <- data.table::as.data.table(gwas)
+populate_full_rsids <- function(gwas, build=rsid_builds$GRCh37) {
   dbsnp_dir <- paste0(genomic_data_dir, "dbsnp")
+  if (!build %in% rsid_builds) stop(paste("Error: invalid rsid build option:", build))
+  gc()
+
+  gwas <- data.table::as.data.table(gwas)
   future::plan(future::multisession, workers = number_of_cpus_available)
   gwas <- genepi.utils::chrpos_to_rsid(gwas, "CHR", "BP", "EA", "OA", flip = "allow", dbsnp_dir=dbsnp_dir, build=build, alt_rsids = F)
   gwas <- tibble::as_tibble(gwas)

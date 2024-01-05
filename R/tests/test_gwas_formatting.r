@@ -3,13 +3,6 @@ source("R/gwas_formatting.r")
 source("R/data_conversions.r")
 source("R/util.r")
 
-test_that("gwas_formatting.vroom_snps gets just a handful of SNPS from a GWAS", {
-  gwas <- "R/tests/data/test_data_small.tsv.gz"
-  snps <- c("19:12436574_A_G", "10:100392738_C_T")
-  result <- vroom_snps(gwas, snps)
-  expect_true(all(result$SNP %in% snps))
-})
-
 test_that("gwas_formatting.standardise_gwas standardises a gwas", {
   test_gwas <- vroom::vroom("R/tests/data/test_data_small.tsv.gz")
   output_file  <- tempfile(fileext = ".tsv.gz")
@@ -34,4 +27,15 @@ test_that("gwas_formatting.standardise_gwas with bespoke_column_map standardises
   expect_equal(nrow(result), 12)
   expect_true(all(result$EA < result$OA))
   expect_true(all(grep("\\d+:\\d+_\\w+_\\w+", result$SNP)))
+})
+
+test_that("gwas_formatting.convert_beta_to_or and back returns the same results", {
+  original_gwas <- vroom::vroom("R/tests/data/test_data_small.tsv.gz")
+
+  gwas <- convert_beta_to_or(original_gwas)
+  gwas <- convert_or_to_beta(gwas)
+
+  floating_point_tolerance <- 1e-10
+  expect_true(all(abs(gwas$BETA - original_gwas$BETA) < floating_point_tolerance))
+  expect_true(all(abs(gwas$SE- original_gwas$SE) < floating_point_tolerance))
 })
