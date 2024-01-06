@@ -16,6 +16,8 @@ convert_reference_build_via_liftover <- function(gwas,
                                                  input_reference_build,
                                                  output_reference_build=reference_builds$GRCh37,
                                                  output_file) {
+  gwas <- get_file_or_dataframe(gwas)
+
   if (missing(input_reference_build) ||
       !shiny::isTruthy(input_reference_build) ||
       input_reference_build == output_reference_build) {
@@ -29,7 +31,7 @@ convert_reference_build_via_liftover <- function(gwas,
                   "Reference builds must be one of:", reference_builds), collapse = " "))
   }
 
-  gwas <- get_file_or_dataframe(gwas)
+
   original_gwas_size <- nrow(gwas)
 
   gwas$CHRBP <- paste(gwas$CHR, gwas$BP, sep=":")
@@ -51,9 +53,8 @@ convert_reference_build_via_liftover <- function(gwas,
 
   updated_gwas_size <- nrow(gwas)
   if (updated_gwas_size < original_gwas_size) {
-    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size-updated_gwas_size,
-                  "rows out of", original_gwas_size)
-    )
+    message(paste("Warning: During liftover conversion, the GWAS lost", original_gwas_size - updated_gwas_size,
+                  "rows out of ", original_gwas_size))
   }
 
   if(!missing(output_file) && shiny::isTruthy(output_file)) {

@@ -8,7 +8,6 @@ get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
 
     if (endsWith(input, ".vcf") || endsWith(input, ".vcf.gz") ) {
       vcf <- VariantAnnotation::readVcf(input)
-      input <- gwasvcf::vcf_to_granges(vcf) |> dplyr::as_tibble()
       input <- gwasvcf::vcf_to_tibble(vcf)
     }
     else {

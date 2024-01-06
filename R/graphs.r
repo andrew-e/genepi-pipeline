@@ -60,7 +60,9 @@ grouped_forest_plot <- function(table, title, group_column, output_file, p_value
     plot_thing + ggplot2::geom_text(ggplot2::aes(x = 1.5, label = .data[[q_stat_column]]))
   }
 
-  ggplot2::ggsave(output_file, width = 2000, units = "px")
+  forest_plot_height <- max(nrow(table)*50, 2000)
+
+  ggplot2::ggsave(output_file, width = 2000, units = "px", height = forest_plot_height)
 }
 
 #' manhattan_and_qq: produce manhattan and qq plot from a GWAS file

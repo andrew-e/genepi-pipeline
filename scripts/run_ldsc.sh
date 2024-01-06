@@ -4,23 +4,20 @@ conda activate ldsc
 #These neeed to be comma separated strings
 GWASES=$1
 NS=$2
-ANCESTRIES=$3
+ANCESTRY=$3
 OUTPUT_PREFIX=$4
 
-LDSC_RESULTS=$RESULTS/ldsc
 LDSC_DATA=$DATA/ldsc
 SUMSTATS_FILES=""
-mkdir -p "$LDSC_RESULTS"
+
 mkdir -p "$LDSC_DATA"
+mkdir -p $(dirname $OUTPUT_PREFIX)
 
 N_LIST=(${NS//,/ })
 ANCESTRIES_LIST=(${ANCESTRIES//,/ })
 i=0
 for gwas in ${GWASES//,/ } ; do
   n=${N_LIST[i]}
-  ancestry=${ANCESTRIES_LIST[i]}
-
-  number_of_ancestries=$(echo $ANCESTRIES | tr ',' '\n' | grep -c $ancestry)
 
   #python2.7 ~/ldsc/munge_sumstats.py \
   ./ldsc/munge_sumstats.py \
@@ -31,31 +28,29 @@ for gwas in ${GWASES//,/ } ; do
       --chunksize 500000 \
       --out "$LDSC_DATA/${gwas}"
 
-  SUMSTATS="${LDSC_DATA}/${gwas}_${ancestry}.sumstats.gz"
-  HERITABILITY_FILE="${LDSC_DATA}/${gwas}_h2"
-
-  if [ $number_of_ancestries == 1 ]; then
-    ./ldsc/ldsc.py \
-      --h2 "$SUMSTATS" \
-      --ref-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ancestry"/ \
-      --w-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ancestry"/ \
-      --out $HERITABILITY_FILE
-  else
-    SUMSTATS_FILES+=($SUMSTATS)
-  fi
-
+  SUMSTATS="${LDSC_DATA}/${gwas}.sumstats.gz"
+  SUMSTATS_FILES+=($SUMSTATS)
   i=$((i+1))
 done
 
 SUMSTATS_STRING=${SUMSTATS_FILES[@]}
 SUMSTATS_STRING=${SUMSTATS_STRING// /,}
 
-./ldsc/ldsc.py \
+if [[ $GWASES =~ "," ]]; then
+  ./ldsc/ldsc.py \
     --rg "$SUMSTATS_STRING" \
     --ref-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ANCESTRY"/ \
     --w-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ANCESTRY"/ \
-    --out $LDSC_RG_RESULT
+    --out $OUTPUT_PREFIX
 
-ldsc_rg_log="$OUTPUT_PREFIX".log
-genetic_correlation=$(awk '/p1   /' RS= "$ldsc_rg_log" | tr -s ' ' '\t')
-echo "$genetic_correlation" > "${OUTPUT_PREFIX}".tsv
+    ldsc_rg_log="$OUTPUT_PREFIX".log
+    genetic_correlation=$(awk '/p1   /' RS= "$ldsc_rg_log" | tr -s ' ' '\t')
+    echo "$genetic_correlation" > "${OUTPUT_PREFIX}".tsv
+else
+  ./ldsc/ldsc.py \
+    --h2 "$SUMSTATS" \
+    --ref-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ANCESTRY"/ \
+    --w-ld-chr "$LDSC_DIR"/1000genomes/ldscores/"$ANCESTRY"/ \
+    --out $OUTPUT_PREFIX
+fi
+

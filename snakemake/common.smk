@@ -38,33 +38,32 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
 
     if not Path(gwas_file).is_file():
         raise ValueError(f"Error: {gwas_file} does not exist")
+    
+    if not ".vcf" in gwas_file:
+        if gwas_file.endswith(".gz"):
+            with gzip.open(gwas_file) as f:
+                gwas_headers = f.readline().decode("utf-8").strip()
+        else:
+            with open(gwas_file) as f:
+                gwas_headers = str(f.readline()).strip()
+        gwas_headers = re.split('\n|,| |\t', gwas_headers)
 
-    if gwas_file.endswith(".gz"):
-        with gzip.open(gwas_file) as f:
-            gwas_headers = f.readline().decode("utf-8").strip()
-    else:
-        with open(gwas_file) as f:
-            gwas_headers = str(f.readline()).strip()
-    gwas_headers = re.split('\n|,| |\t', gwas_headers)
+        missing = set(mandatory_column_names_in_gwas) - set(gwas_headers)
+        if len(missing) > 0:
+            raise ValueError(f"Error: {gwas_file} doesn't contain {missing}")
 
-    missing = set(mandatory_column_names_in_gwas) - set(gwas_headers)
-    if len(missing) > 0:
-        raise ValueError(f"Error: {gwas_file} doesn't contain {missing}")
+        beta_and_or_check = []
+        for beta_and_or_option in beta_and_or_options:
+            option_column_names = [column_name_map[name] for name in beta_and_or_option]
+            missing = set(option_column_names) - set(gwas_headers)
+            beta_and_or_check.append(len(missing) > 0)
 
-    beta_and_or_check = []
-    for beta_and_or_option in beta_and_or_options:
-        option_column_names = [column_name_map[name] for name in beta_and_or_option]
-        missing = set(option_column_names) - set(gwas_headers)
-        beta_and_or_check.append(len(missing) > 0)
-
-    if all(beta_and_or_check):
-        raise ValueError(f"""Error: {gwas_file} doesn't contain the correct pairings for BETA or OR.
-            The options available are: (BETA, SE), (OR, OR_SE), or (OR, OR_LB, OR_UB)""")
+        if all(beta_and_or_check):
+            raise ValueError(f"""Error: {gwas_file} doesn't contain the correct pairings for BETA or OR.
+                The options available are: (BETA, SE), (OR, OR_SE), or (OR, OR_LB, OR_UB)""")
 
     cli_string = turn_dict_into_cli_string(column_name_map)
-    column_map_file = DATA_DIR + "gwas/" + file_prefix(gwas_file) + "_column_map.txt"
-    with open(column_map_file, "w") as text_file:
-        text_file.write(cli_string)
+    return cli_string
 
 
 def validate_ancestries(ancestries):
@@ -89,7 +88,10 @@ def cleanup_old_slurm_logs():
     if not os.path.isdir(slurm_log_directory): return
 
     one_month_ago = datetime.now() - relativedelta(months=1)
-    for filename in os.listdir(slurm_log_directory):
+    files = [f for f in os.listdir(slurm_log_directory) if os.path.isfile(f)]
+    print("deleting old logs")
+
+    for filename in files: 
         file = os.path.join(slurm_log_directory, filename)
         file_timestamp = datetime.utcfromtimestamp(os.stat(file).st_mtime)
         if file_timestamp < one_month_ago: os.remove(file)

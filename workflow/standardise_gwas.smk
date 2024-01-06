@@ -9,8 +9,8 @@ onstart:
 
 for g in pipeline.gwases:
     g.prefix = file_prefix(g.file)
-    g.input_columns = resolve_gwas_columns(gwas.file, gwas.columns)
-    g.output_columns = resolve_gwas_columns(gwas.file, gwas.output.columns)
+    g.input_columns = resolve_gwas_columns(g.file, g.columns)
+    g.output_columns = resolve_gwas_columns(g.file, g.output_columns)
     g.standardised_gwas = standardised_gwas_name(g.file)
     setattr(pipeline, g.prefix, g)
 
@@ -20,7 +20,7 @@ std_file_pattern = standardised_gwas_name("{prefix}")
 
 
 rule all:
-    input: expand(std_file_pattern, [g.prefix for g in pipeline.gwases]),
+    input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases]),
 
 rule standardise_gwases:
     threads: 8

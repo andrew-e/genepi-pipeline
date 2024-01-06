@@ -74,8 +74,7 @@ format_gwas_output <- function(file_gwas, output_file, output_format="default") 
 }
 
 filter_incomplete_rows <- function(gwas) {
-  filtered_gwas <- gwas[!is.na(gwas$EAF) & !is.null(gwas$EAF) &
-                          !is.na(gwas$OA) & !is.null(gwas$OA) &
+  filtered_gwas <- gwas[!is.na(gwas$OA) & !is.null(gwas$OA) &
                           !is.na(gwas$EA) & !is.null(gwas$EA) &
                           !is.na(gwas$CHR) & !is.null(gwas$CHR) &
                           !is.na(gwas$BP) & !is.null(gwas$BP),
@@ -101,6 +100,10 @@ standardise_columns <- function(gwas) {
   }
   else if (all(c("OR", "OR_SE") %in% colnames(gwas)) & !all(c("BETA", "SE") %in% colnames(gwas))) {
     gwas <- convert_or_to_beta(gwas)
+  }
+
+  if ("LOG_P" %in% colnames(gwas) && ! "P" %in% colnames(gwas)) {
+    gwas <- convert_negative_log_p_to_p(gwas)
   }
 
   gwas$BP <- as.numeric(gwas$BP)

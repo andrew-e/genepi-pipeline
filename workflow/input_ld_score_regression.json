@@ -1,0 +1,17 @@
+{
+  "gwases": [
+    {
+      "file": "/user/home/wt23152/scratch/005/data/gwas/scz_gwas_filtered_all_std.tsv.gz",
+      "columns": {},
+      "N": 123,
+      "ancestry": "EUR"
+    },
+    {
+      "file": "",
+      "columns": {"CHR":"seqnames", "BP":"start", "EA":"ALT", "OA":"REF", "EAF":"AF", "LP":"LP", "BETA":"ES", "SE":"SE", "N":"SS"},
+      "N": 123,
+      "ancestry": "EUR"
+    }
+  ],
+  "rsid_map": "NO"
+}
