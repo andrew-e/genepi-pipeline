@@ -215,10 +215,12 @@ calculate_beta_from_z_score <- function(gwas) {
 
 convert_negative_log_p_to_p <- function(gwas) {
   gwas$P <- 10^-gwas$LOG_P
+  return(gwas)
 }
 
 convert_p_to_negative_log_p <- function(gwas) {
   gwas$LOG_P <- -log10(gwas$P)
+  return(gwas)
 }
 
 convert_z_to_p <- function(gwas) {

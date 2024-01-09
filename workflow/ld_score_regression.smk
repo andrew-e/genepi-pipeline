@@ -14,20 +14,18 @@ for g in pipeline.gwases:
     g.sumstats = DATA_DIR + "ldsc/" + g.prefix + ".sumstats.gz"
     setattr(pipeline, g.prefix, g)
 
-ancestries = list([g.ancestry for g in pipeline.gwases])
+ancestries = list(set([g.ancestry for g in pipeline.gwases]))
 validate_ancestries(ancestries)
+ldsc_result_pattern = RESULTS_DIR + "ldsc/results_{ancestry}.log"
 std_file_pattern = standardised_gwas_name("{prefix}")
-sumstats_files = DATA_DIR + "ldsc/" + "{sumstats}"
-sumstats_files = "{sumstats}"
-
 
 rule all:
-    input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases])#, expand(sumstats_files, sumstats=[g.sumstats for g in pipeline.gwases])
+    input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases]), expand(ldsc_result_pattern, ancestry=ancestries)
 
 rule standardise_gwases:
     threads: 8 if pipeline.rsid_map == "FULL" else 4
     resources:
-        mem = "72G" if pipeline.rsid_map == "FULL" else "16G"
+        mem = "72G" if pipeline.rsid_map == "FULL" else "64G"
     params:
         input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
         input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).input_columns,
@@ -42,20 +40,19 @@ rule standardise_gwases:
         """
 
 
-#rule calculate_ldsc_and_genetic_correlation:
-#   resources:
-#       mem = f"{len(pipeline.gwases)*4}G"
-#   input:
-#       gwases = ','.join([g.standardised_gwas for g in pipeline.gwases]),
-#       ns = ','.join([str(g.N) for g in pipeline.gwases]),
-#       ancestries = ','.join([g.ancestry for g in pipeline.gwases])
-#   params:
-#       output_prefix = DATA_DIR + "/ldsc/output"
-#   output: sumstats_files
-#   shell:
-#       """
-#       ./run_ldsc.sh {input.gwases} {input.ns} {input.ancestries} {params.output_prefix}
-#       """
+rule calculate_ldsc_and_genetic_correlation:
+    resources:
+        mem = "8G"
+    params:
+        gwases = lambda wildcards: ','.join([g.standardised_gwas for g in pipeline.gwases if g.ancestry == wildcards.ancestry]),
+        ns = lambda wildcards: ','.join([str(g.N) for g in pipeline.gwases if g.ancestry == wildcards.ancestry]),
+        ancestry = lambda wildcards: wildcards.ancestry
+    output: ldsc_result_pattern
+    shell:
+        """
+        ./run_ldsc.sh {params.gwases} {params.ns} {params.ancestry} {output}
+        """
+        #./run_ldsc.sh {params.gwases} {params.ns} {params.ancestry} {output}
 
 onsuccess:
     onsuccess()
