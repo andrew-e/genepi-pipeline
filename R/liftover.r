@@ -31,7 +31,6 @@ convert_reference_build_via_liftover <- function(gwas,
                   "Reference builds must be one of:", reference_builds), collapse = " "))
   }
 
-
   original_gwas_size <- nrow(gwas)
 
   gwas$CHRBP <- paste(gwas$CHR, gwas$BP, sep=":")

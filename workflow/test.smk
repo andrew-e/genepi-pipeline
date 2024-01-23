@@ -20,3 +20,4 @@ rule is_everything_installed:
         plink1.9 --version >> {output}
         """
 
+onsuccess:

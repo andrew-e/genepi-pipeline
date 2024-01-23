@@ -1,31 +1,38 @@
+#' get_file_or_dataframe: function that takes either dataframe OR file name, and returns a subset of
+#'   columns, rows, or both.
+#'   accepted input file types: txt, csv, tsv, zip, gz
+#' @param input: either data frame or string input of file
+#' @param columns: vector of strings matching column names to filter columns
+#' @param snps: vector of SNP names matching SNPs to filter rows
+#' @return output: data frame of GWAS
 get_file_or_dataframe <- function(input, columns=NULL, snps=NULL) {
   if (is.data.frame(input)) {
-    input <- dplyr::select(input, `if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns))) |>
-        subset(`if`(is.null(snps), T, SNP %in% snps))
+    output <- dplyr::select(input, `if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns))) |>
+        dplyr::filter(`if`(is.null(snps), T, SNP %in% snps))
   }
   else {
     if (!file.exists(input)) stop(paste("Error:", input, "can't be found"))
 
     if (endsWith(input, ".vcf") || endsWith(input, ".vcf.gz") ) {
       vcf <- VariantAnnotation::readVcf(input)
-      input <- gwasvcf::vcf_to_tibble(vcf)
+      output <- gwasvcf::vcf_to_tibble(vcf)
     }
     else {
       if (!is.null(snps)) {
-        input <- vroom_snps(input, snps) |>
+        output <- vroom_snps(input, snps) |>
             dplyr::select(`if`(is.null(columns), dplyr::all_of(dplyr::everything()), dplyr::all_of(columns)))
       }
       else {
         if (is.null(columns)) {
-          input <- vroom::vroom(input)
+          output <- vroom::vroom(input)
         } else {
-          input <- vroom::vroom(input, col_select = dplyr::all_of(columns))
+          output <- vroom::vroom(input, col_select = dplyr::all_of(columns))
         }
       }
     }
-    input <- subset(input, `if`(is.null(snps), T, SNP %in% snps))
+    output <- dplyr::filter(output , `if`(is.null(snps), T, SNP %in% snps))
   }
-  return(input)
+  return(output)
 }
 
 #' vroom_snps: If you only need to get a handful of SNPs out of a whole GWAS, this saves time and memory
@@ -144,6 +151,16 @@ get_other_docker_tag <- function() {
   return(tag_to_match)
 }
 
+run_sqlite_command <- function(db_name, query, col_names = c()) {
+  query <- paste0('"', query, '"')
+  sqlite_command <- paste("sqlite3", db_name, query)
+  output <- system(sqlite_command, intern = T, wait = T)
+  result <- vroom::vroom(output, col_names = F)
+
+  if (is.vector(col_names)) colnames(result) <- col_names
+  return(result)
+}
+
 #TODO: unused, buy maybe helpful in the future
 rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
   dbsnp.hg37 <- "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.db"
@@ -155,5 +172,5 @@ rsid_to_chrpos <- function(gwas_filename, column = "SNP") {
   sqlite_query <- paste0("SELECT 'rs' || rsid || ',' || chrom || ':' || coord FROM rsid_to_coord WHERE rsid IN (", rsid_list, ")")
 
   sqlite_command <- paste("sqlite3", dbsnp.hg37, sqlite_query)
-  output <- system(sqlite_command, intern = TRUE)
+  output <- system(sqlite_command, intern = T, wait = T)
 }

@@ -18,6 +18,17 @@ def read_json_into_object(json_file):
     with open(json_file) as pipeline_input:
         pipeline = json.load(pipeline_input,object_hook=lambda data: SimpleNamespace(**data))
 
+    if not hasattr(pipeline, "output"): setattr(pipeline, "output", default_output_options)
+    else:
+        if not hasattr(pipeline.output, "effect"): setattr(pipeline.output, "effect",default_output_options["effect"])
+        elif pipeline.output.effect not in effect_options:
+            raise ValueError(f"Error: {pipeline.output.effect} is not one of the valid options: {effect_options}")
+
+        if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build",default_output_options["build"])
+        elif pipeline.output.build not in build_options:
+            raise ValueError(f"Error: {pipeline.output.build} is not one of the valid options: {build_options}")
+
+        if not hasattr(pipeline.output, "columns"): setattr(pipeline.output, "columns", default_output_options["columns"])
     if not hasattr(pipeline, "rsid_map"):
         setattr(pipeline, "rsid_map", "PARTIAL")
     elif hasattr(pipeline, "rsid_map") and pipeline.rsid_map not in rsid_map_options:
@@ -36,9 +47,16 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
     all_mandatory_columns = list(set(default_mandatory_columns + additional_mandatory_columns))
     mandatory_column_names_in_gwas = [column_name_map[name] for name in all_mandatory_columns]
 
+    ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, check_input_columns)
+
+    cli_string = turn_dict_into_cli_string(column_name_map)
+    return cli_string
+
+
+def ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, check_input_columns):
     if not Path(gwas_file).is_file():
         raise ValueError(f"Error: {gwas_file} does not exist")
-    
+
     if not ".vcf" in gwas_file:
         if gwas_file.endswith(".gz"):
             with gzip.open(gwas_file) as f:
@@ -46,11 +64,15 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
         else:
             with open(gwas_file) as f:
                 gwas_headers = str(f.readline()).strip()
-        gwas_headers = re.split('\n|,| |\t', gwas_headers)
+        gwas_headers = re.split('\n|,| |\t',gwas_headers)
 
         missing = set(mandatory_column_names_in_gwas) - set(gwas_headers)
         if len(missing) > 0 and check_input_columns:
             raise ValueError(f"Error: {gwas_file} doesn't contain {missing}")
+
+        p_option_present = any([p in mandatory_column_names_in_gwas for p in p_options])
+        if not p_option_present:
+            raise ValueError(f"Error: {gwas_file} doesn't contain a map for P or LOG_P.  Include one please")
 
         beta_and_or_check = []
         for beta_and_or_option in beta_and_or_options:
@@ -60,10 +82,7 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
 
         if all(beta_and_or_check):
             raise ValueError(f"""Error: {gwas_file} doesn't contain the correct pairings for BETA or OR.
-                The options available are: (BETA, SE), (OR, OR_SE), or (OR, OR_LB, OR_UB)""")
-
-    cli_string = turn_dict_into_cli_string(column_name_map)
-    return cli_string
+                The options available are: (BETA, SE), or (OR, OR_LB, OR_UB)""")
 
 
 def validate_ancestries(ancestries):
@@ -117,10 +136,6 @@ def file_prefix(filename):
 
 def turn_dict_into_cli_string(results_dict):
     return ','.join(['%s=%s' % (key, value) for (key, value) in results_dict.items()])
-
-
-def ensure_mandatory_columns_are_present(gwas, columns=default_columns):
-    return 0
 
 
 def copy_data_to_rdfs(files_created):

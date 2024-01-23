@@ -17,16 +17,23 @@ RUN apt update && \
 
 RUN cd /home && \
     git clone https://github.com/MRCIEU/PHESANT.git && \
+    git clone --recurse-submodules https://github.com/samtools/htslib.git && \
+    git clone https://github.com/samtools/bcftools.git && \
+    cd /home/bcftools && \
+    make && \
+    cd /home && \
     git clone https://github.com/bulik/ldsc.git && \
+    #hack to get around ldsc not working when RSID and SNP fields are defined
+    sed -i "s/'SNP': 'SNP'/'PNS': 'PNS'/g" /home/ldsc/munge_sumstats.py && \
     cd /home/ldsc && \
-    /bin/condabin/conda env create --file environment.yml && \
-    /bin/condabin/conda init
+    /bin/condabin/conda env create --file environment.yml
 
 #TODO: other things to think about installing: bcftools, finemap, some sort of meta-analysis tool (METAL, GWAMA, etc)
 #RUN wget http://christianbenner.com/finemap_v1.4.2_x86_64.tgz && tar -xf finemap_v1.4.2_x86_64.tgz && mv finemap_v1.4.2_x86_64 /usr/local/bin/finemap
 
 COPY docker/ docker
 RUN Rscript docker/requirements.r
+RUN Rscript docker/github_packages.r
 RUN pip install -r docker/requirements.txt
 
 CMD ["/bin/bash"]

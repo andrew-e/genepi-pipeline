@@ -2,6 +2,7 @@ library(testthat)
 source("R/gwas_formatting.r")
 source("R/data_conversions.r")
 source("R/util.r")
+source("R/liftover.r")
 
 test_that("gwas_formatting.standardise_gwas standardises a gwas", {
   test_gwas <- vroom::vroom("R/tests/data/test_data_small.tsv.gz")
@@ -37,5 +38,5 @@ test_that("gwas_formatting.convert_beta_to_or and back returns the same results"
 
   floating_point_tolerance <- 1e-10
   expect_true(all(abs(gwas$BETA - original_gwas$BETA) < floating_point_tolerance))
-  expect_true(all(abs(gwas$SE- original_gwas$SE) < floating_point_tolerance))
+  expect_true(all(abs(gwas$SE - original_gwas$SE) < floating_point_tolerance))
 })

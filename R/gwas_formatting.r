@@ -1,8 +1,6 @@
-library(tidyr, quietly=T)
-library(dplyr, quietly=T)
-
+#TODO: replace this with common_columns.csv
 column_map <- list(
-  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N", ENSEMBL_ID="ENSEMBL_ID", GENE_ID="GENE_ID"),
+  default = list(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", Z="Z", BETA="BETA", SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N", ENSEMBL_ID="ENSEMBL_ID", GENE_NAME="GENE_NAME"),
   metal = list(SNP="MarkerName", EA="Allele1", OA="Allele2", EAF="Freq1", P="P-value", BETA="Effect", SE="StdErr"),
   opengwas = list(CHR="chr", BP="position", BETA="beta", P="p", SE="se", N="n", EAF="eaf", EA="ea", OA="nea", RSID="rsid"),
   ieu_ukb_pipeline = list(SNP="SNP", BETA="BETA", SE="SE", EA="ALLELE1", OA="ALLELE0", EAF="A1FREQ", P="P_BOLT_LMM_INF")
@@ -20,9 +18,9 @@ standardise_gwas <- function(gwas,
                              output_file,
                              input_format="default",
                              populate_rsid_option="PARTIAL",
+                             populate_gene_id_option=T,
                              input_reference_build=NULL,
-                             bespoke_column_map=NULL,
-                             populate_gene_id_option=T) {
+                             bespoke_column_map=NULL) {
 
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
@@ -39,7 +37,7 @@ standardise_gwas <- function(gwas,
     standardise_alleles() |>
     health_check() |>
     populate_rsid(populate_rsid_option) |>
-    populate_gene_ids(populate_gene_id_option)
+    populate_gene_names(populate_gene_id_option)
 
   if (!missing(output_file) && shiny::isTruthy(output_file)) {
     vroom::vroom_write(gwas, output_file)
@@ -68,7 +66,7 @@ harmonise_gwases <- function(...) {
 }
 
 format_gwas_output <- function(file_gwas, output_file, output_format="default") {
-  gwas <- vroom::vroom(file_gwas) |>
+  gwas <- get_file_or_dataframe(file_gwas) |>
     change_column_names(column_map[[output_format]], opposite_mapping = T)
 
   vroom::vroom_write(gwas, output_file)
@@ -80,6 +78,7 @@ filter_incomplete_rows <- function(gwas) {
                         !is.na(gwas$CHR) & !is.null(gwas$CHR) &
                         !is.na(gwas$BP) & !is.null(gwas$BP),
   ]
+
   filtered_rows <- nrow(gwas) - nrow(filtered_gwas)
   if (nrow(filtered_gwas) == 0) {
     stop("Error: all rows have been filtered from GWAS due to lack of information.  Stopping")
@@ -115,6 +114,9 @@ standardise_columns <- function(gwas) {
     gwas$P <- as.numeric(gwas$P)
     gwas$P[gwas$P == 0] <- .Machine$double.xmin
   }
+  gwas$BP <- as.numeric(gwas$BP)
+  gwas$P <- as.numeric(gwas$P)
+  gwas$P[gwas$P == 0] <- .Machine$double.xmin
 
   return(gwas)
 }
@@ -127,7 +129,6 @@ health_check <- function(gwas) {
   if ("EAF" %in% gwas_columns && (nrow(gwas[gwas$EAF < 0 | gwas$EAF > 1, ]) > 0)) {
     warning("GWAS has some EAF values outside accepted range")
   }
-
   return(gwas)
 }
 
@@ -140,13 +141,14 @@ health_check <- function(gwas) {
 change_column_names <- function(gwas, columns = list(), opposite_mapping = FALSE) {
   if (!opposite_mapping) {
     for (name in names(columns)) {
-      names(gwas)[names(gwas) == columns[name]] <- name
+     names(gwas)[names(gwas) == columns[name]] <- name
     }
   } else {
     for (name in names(columns)) {
-      names(gwas)[names(gwas) == name] <- columns[name]
+     names(gwas)[names(gwas) == name] <- columns[name]
     }
   }
+
   return(gwas)
 }
 
@@ -179,32 +181,28 @@ standardise_alleles <- function(gwas) {
 #'
 convert_or_to_beta <- function(gwas) {
   gwas <- get_file_or_dataframe(gwas)
-  gwas$BETA <- log(gwas$OR)
+  if (!all(c("OR", "OR_LB", "OR_UB") %in% colnames(gwas))) {
+    stop("Need OR, OR_LB + OR_UB to complete conversion")
+  }
 
-  if ("OR_SE" %in% colnames(gwas)) {
-    gwas$OR_UB <- gwas$OR + (gwas$OR_SE * 1.96)
-    gwas$OR_LB <- gwas$OR - (gwas$OR_SE * 1.96)
-    gwas$SE <- gwas$OR_SE
-  }
-  if (all(c("OR_LB", "OR_UB") %in% colnames(gwas))) {
-    gwas$SE <- (gwas$OR_UB - gwas$OR_LB) / (2 * 1.96)
-  } else {
-    stop("Need OR_SE, or OR_LB + OR_UB to complete conversion")
-  }
+  z_score <- qnorm(.975, mean = 0, sd = 1) #1.96
+  gwas$BETA <- log(gwas$OR)
+  gwas$SE <- (log(gwas$OR_LB) - gwas$BETA) / -z_score
 
   return(gwas)
 }
 
 convert_beta_to_or <- function(gwas) {
   gwas <- get_file_or_dataframe(gwas)
+  z_score <- qnorm(.975, mean = 0, sd = 1) #1.96
 
   gwas$OR <- exp(gwas$BETA)
-  gwas$OR_LB <- gwas$OR - 1.96 * gwas$SE
-  gwas$OR_UB <- gwas$OR + 1.96 * gwas$SE
+  gwas$OR_LB <- exp(gwas$BETA - z_score * gwas$SE)
+  gwas$OR_UB <- exp(gwas$BETA + z_score * gwas$SE)
   return(gwas)
 }
 
-#taken from here: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8432599/ under  "Correlation of trans-eQTL effects"
+#taken from here: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8432599/ under "Correlation of trans-eQTL effects"
 convert_z_score_to_beta <- function(gwas) {
   gwas$BETA <- gwas$Z / sqrt(
     (2 * gwas$EAF) * (1 - gwas$EAF) * (gwas$N + gwas$Z^2)
@@ -213,6 +211,14 @@ convert_z_score_to_beta <- function(gwas) {
     (2 * gwas$EAF) * (1 - gwas$EAF) * (gwas$N + gwas$Z^2)
   )
 
+  return(gwas)
+}
+
+#TODO: don't think this is right...
+convert_beta_to_z_score <- function(gwas) {
+  mean_beta <- mean(gwas$BETA)
+  sd_beta <- sd(gwas$BETA)
+  gwas$Z <- (gwas$BETA - mean_beta) / sd_beta
   return(gwas)
 }
 

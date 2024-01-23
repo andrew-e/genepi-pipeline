@@ -11,16 +11,24 @@ docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
 
 default_clump_headers = "CHR F SNP BP P TOTAL NSIG S05 S01 S001 S0001 SP2"
 default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA",
-    SE="SE", OR="OR", OR_SE="OR_SE", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N",
-    ENSEMBL_ID="ENSEMBL_ID", GENE_ID="GENE_ID"
+    SE="SE", OR="OR", OR_LB="OR_LB", OR_UB="OR_UB", RSID="RSID", N="N",
+    ENSEMBL_ID="ENSEMBL_ID", GENE_NAME="GENE_NAME"
 )
-default_mandatory_columns = ["CHR", "BP", "P", "EA", "OA", "EAF"]
+default_mandatory_columns = ["CHR", "BP", "EA", "OA"]
 rsid_map_options = ["FULL", "PARTIAL", "NO"]
+effect_options = ["BETA", "OR", "Z"]
+build_options = ["GRCh38", "GRCh37", "GRCh36"]
+
+p_options = ["P", "LOG_P"]
 beta_and_or_options = [
     ["BETA", "SE"],
-    ["OR", "OR_LB", "OR_UB"],
-    ["OR", "OR_SE"]
+    ["OR", "OR_LB", "OR_UB"]
 ]
+default_output_options = {
+    "effect": "BETA",
+    "build": "GRCh37",
+    "columns": {}
+}
 
 if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
     raise ValueError("Please populate DATA_DIR and RESULTS_DIR in the .env file provided")
@@ -36,4 +44,3 @@ QTL_TOP_HITS_DIR = format_dir_string(os.getenv('QTL_TOP_HITS'))
 
 if RDFS_DIR and not RDFS_DIR.endswith("working/"):
     raise ValueError("Please ensure RDFS_DIR ends with working/ to ensure the data gets copied to the correct place")
-

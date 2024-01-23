@@ -65,7 +65,7 @@ run_mr_on_qtl_data <- function(gwas_filename, qtl_files, results_output, exposur
     mr_results$F_STAT <- qtl_dataset$F_STAT[matching]
 
     return(mr_results)
-  }) %>% dplyr::bind_rows()
+  }) |> dplyr::bind_rows()
 
 
   vroom::vroom_write(all_qtl_mr_results, results_output)
