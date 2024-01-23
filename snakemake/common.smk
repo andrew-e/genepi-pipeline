@@ -26,7 +26,7 @@ def read_json_into_object(json_file):
     return pipeline
 
 
-def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_columns=[]):
+def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_columns=[], check_input_columns=True):
     if column_name_map is None:
         column_name_map = SimpleNamespace()
 
@@ -49,7 +49,7 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
         gwas_headers = re.split('\n|,| |\t', gwas_headers)
 
         missing = set(mandatory_column_names_in_gwas) - set(gwas_headers)
-        if len(missing) > 0:
+        if len(missing) > 0 and check_input_columns:
             raise ValueError(f"Error: {gwas_file} doesn't contain {missing}")
 
         beta_and_or_check = []

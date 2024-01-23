@@ -10,12 +10,10 @@ onstart:
 for g in pipeline.gwases:
     g.prefix = file_prefix(g.file)
     g.input_columns = resolve_gwas_columns(g.file, g.columns)
-    g.output_columns = resolve_gwas_columns(g.file, g.output_columns)
+    g.output_columns = resolve_gwas_columns(g.file, pipeline.output.columns, check_input_columns=False)
     g.standardised_gwas = standardised_gwas_name(g.file)
     setattr(pipeline, g.prefix, g)
 
-ancestries = list([g.ancestry for g in pipeline.gwases])
-validate_ancestries(ancestries)
 std_file_pattern = standardised_gwas_name("{prefix}")
 
 
