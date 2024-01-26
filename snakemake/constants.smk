@@ -15,7 +15,6 @@ default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF
     ENSEMBL_ID="ENSEMBL_ID", GENE_NAME="GENE_NAME"
 )
 default_mandatory_columns = ["CHR", "BP", "EA", "OA"]
-rsid_map_options = ["FULL", "PARTIAL", "NO"]
 effect_options = ["BETA", "OR", "Z"]
 build_options = ["GRCh38", "GRCh37", "GRCh36"]
 

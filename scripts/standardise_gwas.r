@@ -27,8 +27,8 @@ parser <- add_argument(parser, "--input_reference_build",
 )
 parser <- add_argument(parser, "--populate_rsid",
                        help = "Should GWAS Populate RSID (based on 1000 genomes data)",
-                       type = "character",
-                       default = "PARTIAL"
+                       type = "logical",
+                       default = F
 )
 parser <- add_argument(parser, "--to-output",
                        help = "Flag to format the standardised GWAS into a different output",
@@ -37,9 +37,6 @@ parser <- add_argument(parser, "--to-output",
 
 args <- parse_args(parser)
 create_dir_for_files(args$output_gwas)
-list.files(paste0(genomic_data_dir, "ensembl/"))
-library(ensembldb, lib.loc=paste0(genomic_data_dir, "ensembl/"))
-library(EnsDb.Hsapiens.v79, lib.loc=paste0(genomic_data_dir, "ensembl/"))
 
 if (!args$to_output) {
   bespoke_column_map <-split_string_into_named_list(args$input_columns)

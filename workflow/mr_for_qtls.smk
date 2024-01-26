@@ -1,7 +1,7 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-pipeline = read_json_into_object("input.json")
+pipeline = parse_pipeline_input("input.json")
 additional_mandatory_columns = ["N"]
 
 onstart:

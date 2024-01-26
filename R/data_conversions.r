@@ -1,4 +1,3 @@
-populate_rsid_options <- list(no="NO", partial="PARTIAL", full="FULL")
 rsid_builds <- list(GRCh37="b37_dbsnp156", GRCh38="b38_dbsnp156")
 
 populate_gene_names <- function(gwas) {
@@ -29,17 +28,14 @@ gene_name_to_ensembl_id <- function(gwas) {
   gwas$ENSEMBL_ID <- gene_map$ENSEMBL_ID[match(gwas$GENE_NAME, gene_map$GENE_NAME)]
 }
 
-populate_rsid <- function(gwas, option=populate_rsid_options$partial) {
-  if (!option %in% populate_rsid_options) stop(paste("Error: invalid option:", option))
-
+populate_rsid <- function(gwas, option = F) {
   start <- Sys.time()
-  if (option == populate_rsid_options$no || column_map$default$RSID %in% colnames(gwas)) {
+  if (option == F || column_map$default$RSID %in% colnames(gwas)) {
     message("Skipping RSID population for GWAS")
-  } else if (option == populate_rsid_options$full) {
+  } else {
     gwas <- populate_full_rsids(gwas)
-  } else if (option == populate_rsid_options$partial) {
-    gwas <- populate_partial_rsids(gwas)
   }
+
   message("RSID population time taken:")
   message(Sys.time() - start)
   return (gwas)

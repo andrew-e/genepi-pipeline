@@ -27,5 +27,5 @@
     }
   ],
   "plink_clump_arguments": "--clump-p1 0.00000005",
-  "rsid_map": "FULL"
+  "populate_rsid": "FULL"
 }

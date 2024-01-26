@@ -1,7 +1,7 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-pipeline = read_json_into_object("input.json")
+pipeline = parse_pipeline_input("input.json")
 
 onstart:
     print("##### GWAS LD Score Regression and Genetic Correlation Pipeline #####")
@@ -23,9 +23,9 @@ rule all:
     input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases]), expand(ldsc_result_pattern, ancestry=ancestries)
 
 rule standardise_gwases:
-    threads: 8 if pipeline.rsid_map == "FULL" else 4
+    threads: 8 if pipeline.populate_rsid == "FULL" else 4
     resources:
-        mem = "72G" if pipeline.rsid_map == "FULL" else "64G"
+        mem = "72G" if pipeline.populate_rsid == "FULL" else "64G"
     params:
         input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
         input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).input_columns,
@@ -36,7 +36,7 @@ rule standardise_gwases:
             --input_gwas {params.input_gwas} \
             --input_columns {params.input_columns} \
             --output_gwas {output} \
-            --populate_rsid {pipeline.rsid_map} 
+            --populate_rsid {pipeline.populate_rsid} 
         """
 
 
@@ -52,7 +52,6 @@ rule calculate_ldsc_and_genetic_correlation:
         """
         ./run_ldsc.sh {params.gwases} {params.ns} {params.ancestry} {output}
         """
-        #./run_ldsc.sh {params.gwases} {params.ns} {params.ancestry} {output}
 
 onsuccess:
     onsuccess()

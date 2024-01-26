@@ -7,9 +7,10 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pathlib import Path
 from types import SimpleNamespace
+
 include: "constants.smk"
 
-def read_json_into_object(json_file):
+def parse_pipeline_input(json_file):
     if not os.path.isfile(".env"):
         raise ValueError("Error: .env file doesn't exist")
     if not os.path.isfile(json_file):
@@ -24,16 +25,20 @@ def read_json_into_object(json_file):
         elif pipeline.output.effect not in effect_options:
             raise ValueError(f"Error: {pipeline.output.effect} is not one of the valid options: {effect_options}")
 
-        if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build",default_output_options["build"])
+        if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build", default_output_options["build"])
         elif pipeline.output.build not in build_options:
             raise ValueError(f"Error: {pipeline.output.build} is not one of the valid options: {build_options}")
 
         if not hasattr(pipeline.output, "columns"): setattr(pipeline.output, "columns", default_output_options["columns"])
-    if not hasattr(pipeline, "rsid_map"):
-        setattr(pipeline, "rsid_map", "PARTIAL")
-    elif hasattr(pipeline, "rsid_map") and pipeline.rsid_map not in rsid_map_options:
-        raise ValueError(f"Error: {pipeline.rsid_map} is not one of the valid options: {rsid_map_options}")
+    if not hasattr(pipeline, "populate_rsid"):
+        setattr(pipeline, "populate_rsid", False)
 
+    for g in pipeline.gwases:
+        g.prefix = file_prefix(g.file)
+        g.input_columns = resolve_gwas_columns(g.file,g.columns)
+        g.output_columns = resolve_gwas_columns(g.file,pipeline.output.columns, check_input_columns=False)
+        g.standardised_gwas = standardised_gwas_name(g.file)
+        setattr(pipeline,g.prefix,g)
     return pipeline
 
 
@@ -99,10 +104,6 @@ def standardised_gwas_name(gwas_name):
     else:
         return DATA_DIR + "gwas/" + file_prefix(gwas_name) + "_std.tsv.gz"
 
-def expanded_gwas_list(gwas_files):
-    prefixes = [file_prefix(gwas_file) for gwas_file in gwas_files]
-    return expand(DATA_DIR + "gwas/{file_prexix}_std.tsv.gz", file_prefix = prefixes)
-
 def cleanup_old_slurm_logs():
     if not os.path.isdir(slurm_log_directory): return
 
@@ -114,17 +115,6 @@ def cleanup_old_slurm_logs():
         file = os.path.join(slurm_log_directory, filename)
         file_timestamp = datetime.utcfromtimestamp(os.stat(file).st_mtime)
         if file_timestamp < one_month_ago: os.remove(file)
-
-
-def input_looper(wildcards):
-    print(wildcards)
-    n = int(wildcards.n)
-    if n == 1:
-        return "test/%s.txt" % wildcards.sample
-    elif n > 1:
-        return "loop%d/%s.txt" % (n-1, wildcards.sample)
-    else:
-        raise ValueError("loop numbers must be 1 or greater: received %s" % wildcards.n)
 
 
 def file_prefix(filename):

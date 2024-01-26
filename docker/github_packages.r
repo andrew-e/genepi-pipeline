@@ -3,7 +3,7 @@ devtools::install_github(c("Osmahmoud/SlopeHunter",
                            "MRCIEU/ieugwasr",
                            "MRCIEU/TwoSampleMR",
                            "MRCIEU/gwasvcf",
+													 "nicksunderland/genepi.utils",
                            "suchestoncampbelllab/gwasurvivr",
                            "yixuan/prettydoc")
 )
-devtools::install_github("nicksunderland/genepi.utils", ref = "v0.0.1")

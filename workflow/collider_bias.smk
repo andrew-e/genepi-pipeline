@@ -1,7 +1,7 @@
 include: "../snakemake/common.smk"
 singularity: docker_container
 
-pipeline = read_json_into_object("input.json")
+pipeline = parse_pipeline_input("input.json")
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
@@ -47,7 +47,7 @@ rule all:
 rule standardise_gwases:
     threads: 8
     resources:
-        mem = "72G" if pipeline.rsid_map == "FULL" else "16G"
+        mem = "72G" if pipeline.populate_rsid == "FULL" else "16G"
     params:
         input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
         input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).columns,
@@ -58,7 +58,7 @@ rule standardise_gwases:
             --input_gwas {params.input_gwas} \
             --input_columns {params.input_columns} \
             --output_gwas {output} \
-            --populate_rsid {pipeline.rsid_map} 
+            --populate_rsid {pipeline.populate_rsid} 
         """
 
 

@@ -2,7 +2,7 @@ library(testthat)
 library(vroom)
 source("R/util.r")
 
-test_that("gwas_formatting.vroom_snps gets just a handful of SNPS from a GWAS", {
+test_that("util.vroom_snps gets just a handful of SNPS from a GWAS", {
   gwas <- "R/tests/data/test_data_small.tsv.gz"
   snps <- c("19:12436574_A_G", "10:100392738_C_T")
   result <- vroom_snps(gwas, snps)

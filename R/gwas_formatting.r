@@ -11,14 +11,13 @@ column_map <- list(
 #' @param gwas: filename of gwas to standardise or dataframe of gwas
 #' @param output_file: file to save standardised gwas
 #' @param input_format: type of non-bespoke input format available
-#' @param populate_rsid_option: type of RSID population you want ("NO", "PARTIAL", "FULL"). PARTIAL = 1000 genomes
+#' @param populate_rsid_option: if you want RSID populated or not
 #' @param bespoke_column_map: column header map used for renaming
 #' @return modified gwas: saves new gwas in {output_file} if present
 standardise_gwas <- function(gwas,
                              output_file,
                              input_format="default",
-                             populate_rsid_option="PARTIAL",
-                             populate_gene_id_option=T,
+                             populate_rsid_option=F,
                              input_reference_build=NULL,
                              bespoke_column_map=NULL) {
 
@@ -37,7 +36,7 @@ standardise_gwas <- function(gwas,
     standardise_alleles() |>
     health_check() |>
     populate_rsid(populate_rsid_option) |>
-    populate_gene_names(populate_gene_id_option)
+    populate_gene_names()
 
   if (!missing(output_file) && shiny::isTruthy(output_file)) {
     vroom::vroom_write(gwas, output_file)
