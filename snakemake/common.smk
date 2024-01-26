@@ -52,13 +52,13 @@ def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_c
     all_mandatory_columns = list(set(default_mandatory_columns + additional_mandatory_columns))
     mandatory_column_names_in_gwas = [column_name_map[name] for name in all_mandatory_columns]
 
-    ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, check_input_columns)
+    ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, column_name_map, check_input_columns)
 
     cli_string = turn_dict_into_cli_string(column_name_map)
     return cli_string
 
 
-def ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, check_input_columns):
+def ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gwas, column_name_map, check_input_columns):
     if not Path(gwas_file).is_file():
         raise ValueError(f"Error: {gwas_file} does not exist")
 
@@ -75,8 +75,9 @@ def ensure_mandatory_columns_are_present(gwas_file, mandatory_column_names_in_gw
         if len(missing) > 0 and check_input_columns:
             raise ValueError(f"Error: {gwas_file} doesn't contain {missing}")
 
-        p_option_present = any([p in mandatory_column_names_in_gwas for p in p_options])
-        if not p_option_present:
+        p_option_names = [column_name_map.get(name) for name in p_options]
+        missing = set(p_option_names) - set(gwas_headers)
+        if len(missing) == len(p_option_names):
             raise ValueError(f"Error: {gwas_file} doesn't contain a map for P or LOG_P.  Include one please")
 
         beta_and_or_check = []
