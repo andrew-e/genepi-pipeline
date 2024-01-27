@@ -24,7 +24,6 @@ beta_and_or_options = [
     ["OR", "OR_LB", "OR_UB"]
 ]
 default_output_options = {
-    "effect": "BETA",
     "build": "GRCh37",
     "columns": {}
 }

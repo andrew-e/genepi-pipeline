@@ -22,7 +22,7 @@ test_that("gwas_formatting.standardise_gwas with bespoke_column_map standardises
   bespoke_column_map <- parse_gwas_input_column_maps(map)
   bespoke_column_map <- split_string_into_named_list(bespoke_column_map)
 
-  standardise_gwas("R/tests/data/test_data_tiny.tsv.gz", output_file, bespoke_column_map = bespoke_column_map)
+  standardise_gwas("R/tests/data/test_data_tiny.tsv.gz", output_file, input_column_map = bespoke_column_map)
   result <- vroom::vroom(output_file)
 
   expect_equal(nrow(result), 12)

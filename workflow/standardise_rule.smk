@@ -4,7 +4,9 @@ rule standardise_gwases:
         mem = "72G" if pipeline.populate_rsid == True else "16G"
     params:
         input_gwas = lambda wildcards: getattr(pipeline, wildcards.prefix).file,
+        N = lambda wildcards: getattr(pipeline, wildcards.prefix).N,
         vcf_columns = lambda wildcards: ','.join(vars(getattr(pipeline,wildcards.prefix).columns).values()),
+        input_build = lambda wildcards: getattr(pipeline, wildcards.prefix).build,
         input_columns = lambda wildcards: getattr(pipeline, wildcards.prefix).input_columns,
         output_columns = lambda wildcards: getattr(pipeline,wildcards.prefix).output_columns
     output: std_file_pattern
@@ -13,17 +15,20 @@ rule standardise_gwases:
         INPUT_GWAS={params.input_gwas}
         echo "{params.vcf_columns}"
         if [[ {params.input_gwas} =~ .vcf ]]; then
-            INPUT_GWAS=$(echo "{params.input_gwas}" | sed s/\.vcf/\.tsv/)
+            INPUT_GWAS=$(echo "{params.input_gwas}" | sed  s/.vcf.*/\.tsv/g)
             ./vcf_to_tsv.sh {params.input_gwas} {params.vcf_columns} $INPUT_GWAS
         fi
 
         Rscript standardise_gwas.r \
             --input_gwas $INPUT_GWAS \
-            --input_columns {params.input_columns} \
             --output_gwas {output} \
-            --populate_rsid {pipeline.populate_rsid} \
+            --N {params.N} \
             --output_build {pipeline.output.build} \
             --output_effect {pipeline.output.effect} \
             --output_columns {params.output_columns}
+            --input_columns {params.input_columns} \
+            --input_build {params.input_build} \
+            --output_build {params.output_build} \
+            --populate_rsid {pipeline.populate_rsid}
         """
 

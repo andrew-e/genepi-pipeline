@@ -7,6 +7,11 @@ parser <- add_argument(parser, "--input_gwas",
                        help = "Comma separated list of filenames of GWASes to standardise",
                        type = "character"
 )
+parser <- add_argument(parser, "--N",
+											 help = "Sample size of GWAS",
+											 type = "numeric",
+											 default = NULL
+)
 parser <- add_argument(parser, "--input_columns",
                        help = "Map of column names for pipeline to change it to",
                        type = "character"
@@ -15,6 +20,11 @@ parser <- add_argument(parser, "--input_format",
                        help = "Input format of the gwas (ie. metal, bolt, plink, default)",
                        type = "character",
                        default = "default"
+)
+parser <- add_argument(parser, "--output_format",
+											 help = "Output format of the gwas (ie. metal, bolt, plink, default)",
+											 type = "character",
+											 default = "default"
 )
 parser <- add_argument(parser, "--output_gwas",
                        help = "Comma separated list of filenames of the standardised GWASes",
@@ -30,24 +40,30 @@ parser <- add_argument(parser, "--populate_rsid",
                        type = "logical",
                        default = F
 )
-parser <- add_argument(parser, "--to-output",
-                       help = "Flag to format the standardised GWAS into a different output",
-                       flag = T
+parser <- add_argument(parser, "--output_reference_build",
+                       help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
+                       type = "character",
+                       default = "GRCh37"
+)
+parser <- add_argument(parser, "--output_columns",
+                       help = "Map of column names for pipeline to change it to",
+                       type = "character",
+                       default = NULL
 )
 
 args <- parse_args(parser)
 create_dir_for_files(args$output_gwas)
 
-if (!args$to_output) {
-  bespoke_column_map <-split_string_into_named_list(args$input_columns)
-  standardise_gwas(args$input_gwas,
-                   args$output_gwas,
-                   input_format = args$input_format,
-                   populate_rsid_option = args$populate_rsid,
-                   bespoke_column_map = bespoke_column_map,
-                   input_reference_build = args$input_reference_build
-  )
-} else {
-    format_gwas_output(args$input_gwas, args$output_gwas, args$input_format)
-    gc()
-}
+input_column_map <-split_string_into_named_list(args$input_columns)
+output_column_map <-split_string_into_named_list(args$output_columns)
+
+standardise_gwas(args$input_gwas,
+                 args$output_gwas,
+								 N = args$N,
+                 input_format = args$input_format,
+                 populate_rsid_option = args$populate_rsid,
+                 input_reference_build = args$input_reference_build,
+								 output_reference_build = args$output_reference_build,
+								 input_column_map = input_column_map,
+								 output_column_map = output_column_map
+)

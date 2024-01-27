@@ -21,10 +21,6 @@ def parse_pipeline_input(json_file):
 
     if not hasattr(pipeline, "output"): setattr(pipeline, "output", default_output_options)
     else:
-        if not hasattr(pipeline.output, "effect"): setattr(pipeline.output, "effect",default_output_options["effect"])
-        elif pipeline.output.effect not in effect_options:
-            raise ValueError(f"Error: {pipeline.output.effect} is not one of the valid options: {effect_options}")
-
         if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build", default_output_options["build"])
         elif pipeline.output.build not in build_options:
             raise ValueError(f"Error: {pipeline.output.build} is not one of the valid options: {build_options}")
@@ -34,6 +30,8 @@ def parse_pipeline_input(json_file):
         setattr(pipeline, "populate_rsid", False)
 
     for g in pipeline.gwases:
+        if not hasattr(g, "N"): g.build = None
+        if not hasattr(g, "build"): g.build = "GRCh37"
         g.prefix = file_prefix(g.file)
         g.input_columns = resolve_gwas_columns(g.file,g.columns)
         g.output_columns = resolve_gwas_columns(g.file,pipeline.output.columns, check_input_columns=False)

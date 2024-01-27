@@ -2,6 +2,7 @@
   "gwases": [
     {
       "file": "/mnt/storage/private/mrcieu/data/qtl_top_hits/eqtlgen/eqtlgen_cis_top_hits.txt.gz",
+      "build": "GRCh37",
       "columns": {"RSID":"SNP", "CHR":"SNPChr", "BP":"SNPPos", "EA":"AssessedAllele", "OA":"OtherAllele", "EAF":"AlleleB_all", "P":"Pvalue", "Z":"Zscore", "SE":"SE", "GENE_NAME":"GeneSymbol"}
     },
     {
@@ -18,7 +19,6 @@
     }
   ],
   "output": {
-    "effect": "OR",
     "build": "GRCh38",
     "columns": {}
   },

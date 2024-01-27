@@ -12,31 +12,37 @@ column_map <- list(
 #' @param output_file: file to save standardised gwas
 #' @param input_format: type of non-bespoke input format available
 #' @param populate_rsid_option: if you want RSID populated or not
-#' @param bespoke_column_map: column header map used for renaming
+#' @param input_column_map: column header map used for renaming
 #' @return modified gwas: saves new gwas in {output_file} if present
 standardise_gwas <- function(gwas,
                              output_file,
+                             N=NULL,
                              input_format="default",
+                             output_format="default",
                              populate_rsid_option=F,
                              input_reference_build=NULL,
-                             bespoke_column_map=NULL) {
+                             output_reference_build=NULL,
+                             input_column_map=NULL,
+                             output_column_map=NULL) {
 
   if (is.null(column_map[[input_format]])) {
     stop(paste("Error: invalid input_format!", input_format, "is not recognised."))
   }
 
   #TODO: if we need to add bespoke input format wrangling here, we can
-  gwas_columns <- if(!is.null(bespoke_column_map)) bespoke_column_map else column_map[[input_format]]
+  input_gwas_columns <- if(!is.null(input_column_map)) input_column_map else column_map[[input_format]]
+  output_gwas_columns <- if(!is.null(output_column_map)) output_column_map else column_map[[output_format]]
 
   gwas <- get_file_or_dataframe(gwas) |>
-    change_column_names(gwas_columns) |>
-    standardise_columns() |>
+    change_column_names(input_gwas_columns) |>
+    standardise_columns(N) |>
     filter_incomplete_rows() |>
-    convert_reference_build_via_liftover(input_reference_build) |>
+    convert_reference_build_via_liftover(input_reference_build, output_reference_build) |>
     standardise_alleles() |>
     health_check() |>
     populate_rsid(populate_rsid_option) |>
-    populate_gene_names()
+    populate_gene_names() |>
+    change_column_names(output_gwas_columns)
 
   if (!missing(output_file) && shiny::isTruthy(output_file)) {
     vroom::vroom_write(gwas, output_file)
@@ -64,13 +70,6 @@ harmonise_gwases <- function(...) {
   return(gwases)
 }
 
-format_gwas_output <- function(file_gwas, output_file, output_format="default") {
-  gwas <- get_file_or_dataframe(file_gwas) |>
-    change_column_names(column_map[[output_format]], opposite_mapping = T)
-
-  vroom::vroom_write(gwas, output_file)
-}
-
 filter_incomplete_rows <- function(gwas) {
   filtered_gwas <- gwas[!is.na(gwas$OA) & !is.null(gwas$OA) &
                         !is.na(gwas$EA) & !is.null(gwas$EA) &
@@ -87,8 +86,12 @@ filter_incomplete_rows <- function(gwas) {
   return(filtered_gwas)
 }
 
-standardise_columns <- function(gwas) {
+standardise_columns <- function(gwas, N) {
   gwas_columns <- colnames(gwas)
+
+  if (!"N" %in% gwas_columns && !is.null(N)) {
+    gwas$N <- N
+  }
 
   if (!all(c("CHR", "BP") %in% gwas_columns)) {
     if(all(grepl("\\d:\\d", gwas$SNP))) {
@@ -113,6 +116,7 @@ standardise_columns <- function(gwas) {
     gwas$P <- as.numeric(gwas$P)
     gwas$P[gwas$P == 0] <- .Machine$double.xmin
   }
+
   gwas$BP <- as.numeric(gwas$BP)
   gwas$P <- as.numeric(gwas$P)
   gwas$P[gwas$P == 0] <- .Machine$double.xmin
@@ -137,15 +141,9 @@ health_check <- function(gwas) {
 #' @param: gwas dataframe of gwas to standardise column names
 #' @param: columns named list for
 #' @param: opposite_mapping logical flag on if we are mapping from key to value or vice verca
-change_column_names <- function(gwas, columns = list(), opposite_mapping = FALSE) {
-  if (!opposite_mapping) {
-    for (name in names(columns)) {
-     names(gwas)[names(gwas) == columns[name]] <- name
-    }
-  } else {
-    for (name in names(columns)) {
-     names(gwas)[names(gwas) == name] <- columns[name]
-    }
+change_column_names <- function(gwas, columns = list()) {
+  for (name in names(columns)) {
+   names(gwas)[names(gwas) == columns[name]] <- name
   }
 
   return(gwas)
