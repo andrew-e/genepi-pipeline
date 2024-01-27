@@ -21,12 +21,11 @@ for header in ${HEADERS//,/ } ; do
   #if [[ $result =~ "Error: no such tag defined" ]]; then
   #  modified_header="[%$header]\t"
   #fi
-  QUERY_STRING="$QUERY_STRING,$query"
+  QUERY_STRING="${QUERY_STRING}${query}"
 done
 
-QUERY_STRING="${QUERY_STRING:1:-2}\n"
+QUERY_STRING="${QUERY_STRING:0:-2}\n"
 
 echo $HEADERS | sed 's/,/\t/g' > $TSV_FILE
-ls -la /home/bcftools
-/home/bcftools/bcftools query $VCF_FILE --format $QUERY_STRING >> $TSV_FILE
-gzip $TSV_FILE
+/home/bcftools/bcftools query $VCF_FILE --format "$QUERY_STRING" >> $TSV_FILE
+
