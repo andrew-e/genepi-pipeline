@@ -16,7 +16,7 @@ column_map <- list(
 #' @return modified gwas: saves new gwas in {output_file} if present
 standardise_gwas <- function(gwas,
                              output_file,
-                             N=NULL,
+                             N=0,
                              input_format="default",
                              output_format="default",
                              populate_rsid_option=F,
@@ -89,7 +89,7 @@ filter_incomplete_rows <- function(gwas) {
 standardise_columns <- function(gwas, N) {
   gwas_columns <- colnames(gwas)
 
-  if (!"N" %in% gwas_columns && !is.null(N)) {
+  if (!"N" %in% gwas_columns && N > 0) {
     gwas$N <- N
   }
 

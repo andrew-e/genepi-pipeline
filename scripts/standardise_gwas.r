@@ -8,9 +8,9 @@ parser <- add_argument(parser, "--input_gwas",
                        type = "character"
 )
 parser <- add_argument(parser, "--N",
-											 help = "Sample size of GWAS",
-											 type = "numeric",
-											 default = NULL
+                       help = "Sample size of GWAS",
+                       type = "numeric",
+                       default = 0
 )
 parser <- add_argument(parser, "--input_columns",
                        help = "Map of column names for pipeline to change it to",
@@ -22,28 +22,28 @@ parser <- add_argument(parser, "--input_format",
                        default = "default"
 )
 parser <- add_argument(parser, "--output_format",
-											 help = "Output format of the gwas (ie. metal, bolt, plink, default)",
-											 type = "character",
-											 default = "default"
+                       help = "Output format of the gwas (ie. metal, bolt, plink, default)",
+                       type = "character",
+                       default = "default"
 )
 parser <- add_argument(parser, "--output_gwas",
                        help = "Comma separated list of filenames of the standardised GWASes",
                        type = "character"
 )
-parser <- add_argument(parser, "--input_reference_build",
+parser <- add_argument(parser, "--input_build",
                        help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
                        type = "character",
                        default = NULL
+)
+parser <- add_argument(parser, "--output_build",
+                       help = paste(c("Output reference builds, options:", reference_builds), collapse = " "),
+                       type = "character",
+                       default = "GRCh37"
 )
 parser <- add_argument(parser, "--populate_rsid",
                        help = "Should GWAS Populate RSID (based on 1000 genomes data)",
                        type = "logical",
                        default = F
-)
-parser <- add_argument(parser, "--output_reference_build",
-                       help = paste(c("Input reference builds, options:", reference_builds), collapse = " "),
-                       type = "character",
-                       default = "GRCh37"
 )
 parser <- add_argument(parser, "--output_columns",
                        help = "Map of column names for pipeline to change it to",
@@ -59,11 +59,11 @@ output_column_map <-split_string_into_named_list(args$output_columns)
 
 standardise_gwas(args$input_gwas,
                  args$output_gwas,
-								 N = args$N,
+                 N = args$N,
                  input_format = args$input_format,
                  populate_rsid_option = args$populate_rsid,
                  input_reference_build = args$input_reference_build,
-								 output_reference_build = args$output_reference_build,
-								 input_column_map = input_column_map,
-								 output_column_map = output_column_map
+                 output_reference_build = args$output_reference_build,
+                 input_column_map = input_column_map,
+                 output_column_map = output_column_map
 )

@@ -27,5 +27,6 @@ done
 QUERY_STRING="${QUERY_STRING:1:-2}\n"
 
 echo $HEADERS | sed 's/,/\t/g' > $TSV_FILE
+ls -la /home/bcftools
 /home/bcftools/bcftools query $VCF_FILE --format $QUERY_STRING >> $TSV_FILE
 gzip $TSV_FILE

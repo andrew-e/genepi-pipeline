@@ -30,7 +30,7 @@ def parse_pipeline_input(json_file):
         setattr(pipeline, "populate_rsid", False)
 
     for g in pipeline.gwases:
-        if not hasattr(g, "N"): g.build = None
+        if not hasattr(g, "N"): g.N = 0
         if not hasattr(g, "build"): g.build = "GRCh37"
         g.prefix = file_prefix(g.file)
         g.input_columns = resolve_gwas_columns(g.file,g.columns)

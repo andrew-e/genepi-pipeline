@@ -23,12 +23,10 @@ rule standardise_gwases:
             --input_gwas $INPUT_GWAS \
             --output_gwas {output} \
             --N {params.N} \
-            --output_build {pipeline.output.build} \
-            --output_effect {pipeline.output.effect} \
-            --output_columns {params.output_columns}
-            --input_columns {params.input_columns} \
             --input_build {params.input_build} \
-            --output_build {params.output_build} \
+            --output_build {pipeline.output.build} \
+            --input_columns {params.input_columns} \
+            --output_columns {params.output_columns} \
             --populate_rsid {pipeline.populate_rsid}
         """
 
