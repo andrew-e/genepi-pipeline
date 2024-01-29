@@ -1,0 +1,17 @@
+{
+  "gwases": [
+    {
+      "file": "R/tests/data/test_data_small.tsv.gz",
+      "columns": {},
+      "ancestry": "EUR"
+    },
+    {
+      "file": "R/tests/data/test_data_other_hg38.tsv.gz",
+      "columns": {},
+      "build": "GRCh38",
+      "ancestry": "EUR"
+    }
+  ],
+  "plink_clump_arguments": "--clump-p1 0.00000005",
+  "populate_rsid": false
+}

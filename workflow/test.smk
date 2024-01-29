@@ -1,5 +1,5 @@
 include: "../snakemake/common.smk"
-singularity: "docker://andrewrrelmore/genepi_pipeline:develop"
+singularity: docker_container
 
 output_file = RESULTS_DIR + "/test_output.log"
 output_file_prefix = RESULTS_DIR + "/test_output.log"
@@ -20,4 +20,3 @@ rule is_everything_installed:
         plink1.9 --version >> {output}
         """
 
-onsuccess:
