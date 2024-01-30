@@ -30,14 +30,16 @@ results_file = RESULTS_DIR + "gwas_comparison/result_summary.html"
 
 
 std_file_pattern = standardised_gwas_name("{prefix}")
+ldsc_result_pattern = RESULTS_DIR + "ldsc/results_{ancestry}.log"
 rule all:
-    input: expand(std_file_pattern, [g.prefix for g in pipeline.gwases]),
-        expected_vs_observed_results,
-        expected_vs_observed_variants,
-        heterogeneity_scores,
-        heterogeneity_plot,
-        heterogeneity_snp_comparison,
-        results_file
+    input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases]),
+           expand(ldsc_result_pattern, ancestry=ancestries),
+           expected_vs_observed_results,
+           expected_vs_observed_variants,
+           heterogeneity_scores,
+           heterogeneity_plot,
+           heterogeneity_snp_comparison,
+           results_file
 
 include: "standardise_rule.smk"
 

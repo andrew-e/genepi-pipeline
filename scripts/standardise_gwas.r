@@ -62,8 +62,8 @@ standardise_gwas(args$input_gwas,
                  N = args$N,
                  input_format = args$input_format,
                  populate_rsid_option = args$populate_rsid,
-                 input_reference_build = args$input_reference_build,
-                 output_reference_build = args$output_reference_build,
+                 input_reference_build = args$input_build,
+                 output_reference_build = args$output_build,
                  input_column_map = input_column_map,
                  output_column_map = output_column_map
 )

@@ -19,13 +19,13 @@ def parse_pipeline_input(json_file):
     with open(json_file) as pipeline_input:
         pipeline = json.load(pipeline_input,object_hook=lambda data: SimpleNamespace(**data))
 
-    if not hasattr(pipeline, "output"): setattr(pipeline, "output", default_output_options)
+    if not hasattr(pipeline, "output"): pipeline.output = default_output_options
     else:
-        if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build", default_output_options["build"])
+        if not hasattr(pipeline.output, "build"): setattr(pipeline.output, "build", default_output_options.build)
         elif pipeline.output.build not in build_options:
             raise ValueError(f"Error: {pipeline.output.build} is not one of the valid options: {build_options}")
 
-        if not hasattr(pipeline.output, "columns"): setattr(pipeline.output, "columns", default_output_options["columns"])
+        if not hasattr(pipeline.output, "columns"): setattr(pipeline.output, "columns", default_output_options.columns)
     if not hasattr(pipeline, "populate_rsid"):
         setattr(pipeline, "populate_rsid", False)
 
@@ -33,7 +33,7 @@ def parse_pipeline_input(json_file):
         if not hasattr(g, "N"): g.N = 0
         if not hasattr(g, "build"): g.build = "GRCh37"
         g.prefix = file_prefix(g.file)
-        g.input_columns = resolve_gwas_columns(g.file,g.columns)
+        g.input_columns = resolve_gwas_columns(g.file, g.columns)
         g.output_columns = resolve_gwas_columns(g.file,pipeline.output.columns, check_input_columns=False)
         g.standardised_gwas = standardised_gwas_name(g.file)
         setattr(pipeline,g.prefix,g)
@@ -41,7 +41,7 @@ def parse_pipeline_input(json_file):
 
 
 def resolve_gwas_columns(gwas_file, column_name_map=None, additional_mandatory_columns=[], check_input_columns=True):
-    if column_name_map is None:
+    if not bool(column_name_map):
         column_name_map = SimpleNamespace()
 
     column_name_map = vars(column_name_map)

@@ -131,13 +131,14 @@ compare_heterogeneity_across_ancestries <- function(gwas_filenames,
     get_file_or_dataframe(gwas_filename, columns = comparison_columns) |>
       dplyr::filter(RSID %in% clumped_snps)
   })
+  gwas_ancestry_names <- c()
   for (i in seq_along(gwases)) {
     gwases[[i]]$ancestry <- ancestry_list[[i]]
+    gwas_ancestry_names[[i]] <- paste0(i, "_", ancestry_list[[i]])
   }
 
   harmonised_gwases <- rlang::inject(harmonise_gwases(!!!gwases))
-  #TODO: change this to be more generic names (not based on ancestry alone).  So it can be more exensible
-  gwases_by_ancestry <- stats::setNames(harmonised_gwases, ancestry_list)
+  gwases_by_ancestry <- stats::setNames(harmonised_gwases, gwas_ancestry_names)
 
   heterogeneity_results <- calculate_heterogeneity_scores(gwases_by_ancestry, heterogeneity_score_file)
   plot_heritability_contribution_per_ancestry(heterogeneity_results$Qj, heterogeneity_plot_file)
@@ -173,6 +174,7 @@ plot_snps_with_heterogeneity <- function(gwases_by_ancestry, heterogeneity_resut
 #' - Q = vector of p-values for Cochrane's Q statistic for each SNP
 #' - Qj = Data frame of per-population outlier q values for each SNP
 calculate_heterogeneity_scores <- function(gwases_by_ancestry, heterogeneity_score_file) {
+  library(dplyr)
   beta <- lapply(gwases_by_ancestry, \(x) x$BETA) %>% bind_cols
   se <- lapply(gwases_by_ancestry, \(x) x$SE) %>% bind_cols
   o <- lapply(seq_len(nrow(beta)), \(i) {

@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from types import SimpleNamespace
 
 def format_dir_string(directory):
     if not directory: return None
@@ -23,10 +24,10 @@ beta_and_or_options = [
     ["BETA", "SE"],
     ["OR", "OR_LB", "OR_UB"]
 ]
-default_output_options = {
+default_output_options = SimpleNamespace(**{
     "build": "GRCh37",
-    "columns": {}
-}
+    "columns": SimpleNamespace(**default_columns)
+})
 
 if not os.getenv("DATA_DIR") or not os.getenv("RESULTS_DIR"):
     raise ValueError("Please populate DATA_DIR and RESULTS_DIR in the .env file provided")
