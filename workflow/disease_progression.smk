@@ -6,15 +6,6 @@ pipeline = parse_pipeline_input("input.json")
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
 
-clump_dir = DATA_DIR + "clumped_snps/"
-if not os.path.isdir(clump_dir):
-    os.makedirs(clump_dir)
-
-
-for g in pipeline.gwases:
-    g.clumped_prefix = clump_dir + g.prefix
-    g.clumped_file = g.clumped_prefix + ".clumped"
-
 incident = pipeline.gwases[0]
 subsequent = pipeline.gwases[1]
 
@@ -35,40 +26,9 @@ rule all:
         collider_bias_results, slopehunter_results, harmonised_effects, unadjusted_miami_plot,
         slopehunter_adjusted_miami_plot, expected_vs_observed_results, expected_vs_observed_variants, results_file
 
-include: "standardise_rule.smk"
+include: "rules/standardise_rule.smk"
+include: "rules/clumping_rule.smk"
 
-rule clump_incidence_gwas:
-    resources:
-        mem = "4G"
-    input:
-        gwas = incident.standardised_gwas
-    output:
-        incident.clumped_file
-    shell:
-        """
-        plink1.9 --bfile {THOUSAND_GENOMES_DIR}{incident.ancestry} \
-            --clump {input.gwas} \
-            --clump-snp-field RSID \
-            {pipeline.plink_clump_arguments} \
-            --out {incident.clumped_prefix} || echo "{default_clump_headers}" > {output}
-        """
-
-#TODO: ensure that this doesn't fail if no hits are found at that p-value
-rule clump_subsequent_gwas:
-    resources:
-        mem = "4G"
-    input:
-        gwas = subsequent.standardised_gwas
-    output:
-        subsequent.clumped_file
-    shell:
-        """
-        plink1.9 --bfile {THOUSAND_GENOMES_DIR}{subsequent.ancestry} \
-            --clump {input.gwas} \
-            --clump-snp-field RSID \
-            --clump-p1 0.00000005 \
-            --out {subsequent.clumped_prefix} || echo "{default_clump_headers}" > {output}
-        """
 
 rule collider_bias_correction:
     threads: 8

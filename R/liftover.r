@@ -13,14 +13,12 @@ available_liftover_conversions[[paste0(reference_builds$GRCh37, reference_builds
 #' @param output_file: optional output file name to save to
 #' @return gwas input is altered and returned
 convert_reference_build_via_liftover <- function(gwas,
-                                                 input_reference_build,
+                                                 input_reference_build=reference_builds$GRCh37,
                                                  output_reference_build=reference_builds$GRCh37,
                                                  output_file) {
   gwas <- get_file_or_dataframe(gwas)
 
-  if (missing(input_reference_build) ||
-      !shiny::isTruthy(input_reference_build) ||
-      input_reference_build == output_reference_build) {
+  if (input_reference_build == output_reference_build) {
     return(gwas)
   }
   start <- Sys.time()
@@ -61,6 +59,7 @@ convert_reference_build_via_liftover <- function(gwas,
     unmapped_file_location <- paste0(dirname(output_file), file_prefix(output_file), ".unmapped")
     file.copy(unmapped, unmapped_file_location)
   }
+
   message("Liftover time taken:")
   print(Sys.time() - start)
   return(gwas)

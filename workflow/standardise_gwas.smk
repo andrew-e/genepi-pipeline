@@ -11,7 +11,7 @@ std_file_pattern = standardised_gwas_name("{prefix}")
 rule all:
     input: expand(std_file_pattern, prefix=[g.prefix for g in pipeline.gwases])
 
-include: "standardise_rule.smk"
+include: "rules/standardise_rule.smk"
 
 onsuccess:
     onsuccess()

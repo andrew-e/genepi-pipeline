@@ -6,15 +6,6 @@ pipeline = parse_pipeline_input("input.json")
 onstart:
     print("##### GWAS Comparison Pipeline #####")
 
-clump_dir = DATA_DIR + "clumped_snps/"
-if not os.path.isdir(clump_dir):
-    os.makedirs(clump_dir)
-
-for g in pipeline.gwases:
-    g.clumped_snp_prefix = clump_dir + file_prefix(g.file)
-    g.clumped_file = g.clumped_snp_prefix + ".clumped"
-    setattr(pipeline, g.prefix, g)
-
 ancestries = list([g.ancestry for g in pipeline.gwases])
 validate_ancestries(ancestries)
 
@@ -41,32 +32,8 @@ rule all:
            heterogeneity_snp_comparison,
            results_file
 
-include: "standardise_rule.smk"
-
-rule find_clumped_snps:
-    resources:
-        mem = "4G"
-    input:
-        gwases = [g.standardised_gwas for g in pipeline.gwases]
-    output: [g.clumped_file for g in pipeline.gwases]
-    params:
-        clumped_snp_prefixes = list([g.clumped_snp_prefix for g in pipeline.gwases])
-    shell:
-        """
-        gwases=({input.gwases})
-        ancestries=({ancestries})
-        clumped_snp_prefixes=({params.clumped_snp_prefixes})
-
-        for i in "${{!gwases[@]}}"
-        do
-            ancestry=${{ancestries[$i]}}
-            plink1.9 --bfile {THOUSAND_GENOMES_DIR}/$ancestry \
-                --clump ${{gwases[$i]}} \
-                --clump-p1 0.0000005 \
-                --clump-snp-field RSID \
-                --out ${{clumped_snp_prefixes[$i]}}
-        done
-        """
+include: "rules/standardise_rule.smk"
+include: "rules/clumping_rule.smk"
 
 
 rule compare_observed_vs_expected_gwas:

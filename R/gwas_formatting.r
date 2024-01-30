@@ -20,8 +20,8 @@ standardise_gwas <- function(gwas,
                              input_format="default",
                              output_format="default",
                              populate_rsid_option=F,
-                             input_reference_build=NULL,
-                             output_reference_build=NULL,
+                             input_reference_build=reference_builds$GRCh37,
+                             output_reference_build=reference_builds$GRCh37,
                              input_column_map=NULL,
                              output_column_map=NULL) {
 
