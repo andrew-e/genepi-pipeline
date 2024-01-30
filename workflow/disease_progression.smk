@@ -2,12 +2,14 @@ include: "../snakemake/common.smk"
 singularity: docker_container
 
 pipeline = parse_pipeline_input("input.json")
+incident = pipeline.gwases[0]
+subsequent = pipeline.gwases[1]
 
 onstart:
     print("##### Pipeline to Calculate Slope and Apply Correction on Collider Bias #####")
 
-incident = pipeline.gwases[0]
-subsequent = pipeline.gwases[1]
+ancestries = [incident.ancestry, subsequent.ancestry]
+validate_ancestries(ancestries)
 
 collider_bias_results = RESULTS_DIR + "collider_bias/" + subsequent.prefix + "_collider_bias_results.tsv"
 harmonised_effects = RESULTS_DIR + "collider_bias/" + subsequent.prefix + "_harmonised_effects.tsv.gz"
