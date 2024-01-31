@@ -13,5 +13,5 @@
     }
   ],
   "plink_clump_arguments": "--clump-p1 0.00000005",
-  "populate_rsid": true
+  "populate_rsid": false
 }
