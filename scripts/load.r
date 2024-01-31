@@ -2,3 +2,5 @@
 source("../R/util.r")
 source("../R/constants.r")
 lapply(list.files("../R/", full.names = T, pattern="\\.r$"), source)
+
+options(error = function() traceback(20))
