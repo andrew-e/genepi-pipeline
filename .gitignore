@@ -1,5 +1,8 @@
 .snakemake/
 .cache/
-input.json
+.ipynb_checkpoints/
+*input.json
 .env
+.bashrc
 .DS_Store
+ieugwasr_oauth

@@ -1,18 +1,22 @@
 include: "../snakemake/common.smk"
-singularity: "docker://andrewrrelmore/genepi_pipeline:develop"
+singularity: docker_container
 
 output_file = RESULTS_DIR + "/test_output.log"
+output_file_prefix = RESULTS_DIR + "/test_output.log"
 
 onstart:
     print("Test pipeline for genepi-pipeline package")
 
 rule all:
-    input: output_file
+    input: expand(RESULTS_DIR + "{prefix}.log", ["test1", "test2"])
 
 rule is_everything_installed:
-    output: temporary(output_file)
+    input: expand("{hi}", ["Dockerfile", "Dockerfile_app"])
+    output: RESULTS_DIR + "{prefix}.log"
     shell:
         """
+        echo {hi}
+        echo {{print({prefix})}}
         plink1.9 --version >> {output}
         """
 
