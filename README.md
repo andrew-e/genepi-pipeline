@@ -61,3 +61,8 @@ There are 3 main components to the pipeline
 * Files to run snakemake, which include:
   * `workflow` directory, which holds various Snakefile pipelines
   * `snakemake` directory, which defines the pipeline steps and configuration, and shared code between pipelines
+
+
+## Making changes
+
+To make changes to the docker images, you will have to contact andrew.r.elmore@gmail.com, since the storage of the docker image is tied to his docker account at the moment.

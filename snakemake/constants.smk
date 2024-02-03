@@ -8,7 +8,7 @@ def format_dir_string(directory):
 load_dotenv()
 user = os.getenv('USER')
 slurm_log_directory = f"/user/work/{user}/slurm_logs/"
-docker_container = "docker://andrewrrelmore/genepi_pipeline:test"
+docker_container = "docker://andrewrrelmore/genepi_pipeline:latest"
 
 default_clump_headers = "CHR F SNP BP P TOTAL NSIG S05 S01 S001 S0001 SP2"
 default_columns = dict(SNP="SNP", CHR="CHR", BP="BP", EA="EA", OA="OA", EAF="EAF", P="P", BETA="BETA",

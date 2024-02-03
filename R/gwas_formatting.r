@@ -117,10 +117,6 @@ standardise_columns <- function(gwas, N) {
     gwas$P[gwas$P == 0] <- .Machine$double.xmin
   }
 
-  gwas$BP <- as.numeric(gwas$BP)
-  gwas$P <- as.numeric(gwas$P)
-  gwas$P[gwas$P == 0] <- .Machine$double.xmin
-
   return(gwas)
 }
 
